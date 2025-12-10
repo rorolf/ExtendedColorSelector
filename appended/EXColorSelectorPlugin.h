@@ -1,0 +1,91 @@
+#########################
+## EXColorSelectorPlugin.h
+#########################
+
+
+
+
+#ifndef EXTENDEDCOLORSELECTOR_H
+#define EXTENDEDCOLORSELECTOR_H
+
+#include <QObject>
+#include <QVariantList>
+
+class EXColorSelectorPlugin : public QObject
+{
+public:
+    EXColorSelectorPlugin(QObject *parent, const QVariantList &);
+    ~EXColorSelectorPlugin() override = default;
+};
+
+#endif // EXTENDEDCOLORSELECTOR_H
+
+
+
+
+
+#########################
+## EXColorSelectorPlugin.cpp
+#########################
+
+
+
+
+#include <KoDockFactoryBase.h>
+#include <KoDockRegistry.h>
+#include <klocalizedstring.h>
+#include <kpluginfactory.h>
+
+#include "EXColorSelectorDock.h"
+#include "EXColorSelectorPlugin.h"
+
+K_PLUGIN_FACTORY_WITH_JSON(EXColorSelectorPluginFactory,
+                           "extendedcolorselector.json",
+                           registerPlugin<EXColorSelectorPlugin>();)
+
+class EXColorSelectorFactory : public KoDockFactoryBase
+{
+public:
+    EXColorSelectorFactory()
+    {
+    }
+
+    QString id() const override
+    {
+        return QString("ExtendedColorSelector");
+    }
+
+    QDockWidget *createDockWidget() override
+    {
+        EXColorSelectorDock *dockWidget = new EXColorSelectorDock();
+        dockWidget->setObjectName(id());
+
+        return dockWidget;
+    }
+
+    DockPosition defaultDockPosition() const override
+    {
+        return DockRight;
+    }
+};
+
+EXColorSelectorPlugin::EXColorSelectorPlugin(QObject *parent, const QVariantList &)
+{
+    Q_UNUSED(parent)
+    KoDockRegistry::instance()->add(new EXColorSelectorFactory());
+}
+
+extern "C" {
+Q_DECL_EXPORT void load_extended_color_selector_plugin()
+{
+    qDebug() << "Hello Krita, from Extended Color Selector plugin, in C++!";
+    EXColorSelectorPlugin plugin(nullptr, {});
+}
+}
+
+#include "EXColorSelectorPlugin.moc"
+
+
+
+
+

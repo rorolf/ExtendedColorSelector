@@ -1,0 +1,469 @@
+#########################
+## EXSettingsDialog.h
+#########################
+
+
+
+
+#ifndef EXSETTINGSDIALOG_H
+#define EXSETTINGSDIALOG_H
+
+#include <QCloseEvent>
+#include <QDialog>
+#include <QListWidget>
+#include <QStackedLayout>
+
+#include "EXColorModel.h"
+#include "EXSettings.h"
+#include "EXSettingsState.h"
+
+class EXPerColorModelSettingsDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    EXPerColorModelSettingsDialog(EXSettingsStateSP settingsState, QWidget *parent = nullptr);
+    ~EXPerColorModelSettingsDialog() override = default;
+
+private:
+    QListWidget *m_pageSwitchers;
+    EXSettingsStateSP m_settingsState;
+    QVector<QListWidget *> m_extraSlidersLists;
+
+    void updateColorModelsOrder();
+    void updateExtraSlidersOrder(ColorModelId colorModelId);
+
+    void closeEvent(QCloseEvent *event) override;
+};
+
+class EXGlobalSettingsDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    EXGlobalSettingsDialog(EXSettingsStateSP settingsState, QWidget *parent = nullptr);
+
+private:
+    EXSettingsStateSP m_settingsState;
+    void closeEvent(QCloseEvent *event) override;
+};
+
+#endif
+
+
+
+
+
+#########################
+## EXSettingsDialog.cpp
+#########################
+
+
+
+
+#include <QButtonGroup>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QListWidget>
+#include <QRadioButton>
+#include <QStackedLayout>
+#include <QVBoxLayout>
+#include <qmath.h>
+
+#include "EXSettings.h"
+#include "EXSettingsDialog.h"
+#include "EXSettingsState.h"
+#include "OptionalColorPicker.h"
+
+EXPerColorModelSettingsDialog::EXPerColorModelSettingsDialog(EXSettingsStateSP settingsState, QWidget *parent)
+    : QDialog(parent)
+    , m_settingsState(settingsState)
+    , m_extraSlidersLists(ColorModelFactory::AllModels.size(), nullptr)
+{
+    setWindowTitle("Extended Color Selector - Settings");
+    auto mainLayout = new QHBoxLayout();
+
+    auto pageSwitchers = new QListWidget();
+    pageSwitchers->setDropIndicatorShown(true);
+    pageSwitchers->setDragDropMode(QListWidget::InternalMove);
+    auto pages = new QStackedLayout();
+
+    for (const auto &colorModelId : m_settingsState->globalSettings.displayOrder) {
+        auto &settings = m_settingsState->settings[colorModelId];
+        auto colorModel = ColorModelFactory::fromId(colorModelId);
+
+        auto pageSwitcherItem = new QListWidgetItem(colorModel->displayName());
+        pageSwitcherItem->setData(Qt::UserRole, static_cast<int>(colorModelId));
+        pageSwitcherItem->setFlags(pageSwitcherItem->flags() | Qt::ItemFlag::ItemIsUserCheckable);
+        pageSwitcherItem->setCheckState(settings.enabled ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        pageSwitchers->addItem(pageSwitcherItem);
+
+        auto page = new QWidget();
+        auto pageLayout = new QVBoxLayout();
+        page->setLayout(pageLayout);
+
+        auto slidersEnabled = new QCheckBox(QString("Enable %1 Sliders").arg(colorModel->displayName()));
+        slidersEnabled->setChecked(settings.slidersEnabled);
+        connect(slidersEnabled, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.slidersEnabled = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+
+        auto extraSlidersLabel = new QLabel("Extra Sliders");
+        auto extraSlidersList = new QListWidget();
+        extraSlidersList->setDropIndicatorShown(true);
+        extraSlidersList->setDragDropMode(QListWidget::InternalMove);
+        for (const auto &modelId : ColorModelFactory::AllModels) {
+            if (modelId == colorModelId) {
+                continue;
+            }
+            auto item = new QListWidgetItem(ColorModelFactory::fromId(modelId)->displayName());
+            item->setData(Qt::UserRole, static_cast<int>(modelId));
+            item->setFlags(item->flags() | Qt::ItemFlag::ItemIsUserCheckable);
+            item->setCheckState(settings.extraSliders.contains(modelId) ? Qt::CheckState::Checked
+                                                                        : Qt::CheckState::Unchecked);
+            extraSlidersList->addItem(item);
+        }
+
+        auto model = extraSlidersList->model();
+        connect(model, &QAbstractItemModel::rowsMoved, this, [this, colorModelId]() {
+            updateExtraSlidersOrder(colorModelId);
+        });
+        connect(extraSlidersList, &QListWidget::itemChanged, this, [this, colorModelId]() {
+            updateExtraSlidersOrder(colorModelId);
+        });
+        m_extraSlidersLists[colorModelId] = extraSlidersList;
+
+        auto colorfulPrimaryChannel = new QCheckBox("Colorful Primary Channel");
+        colorfulPrimaryChannel->setChecked(settings.colorfulHueRing);
+        connect(colorfulPrimaryChannel, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.colorfulHueRing = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+
+        auto clipGamutBox = new QCheckBox("Clip Gamut To SRGB Range");
+        clipGamutBox->setChecked(settings.clipToSrgbGamut);
+        connect(clipGamutBox, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.clipToSrgbGamut = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+
+        auto shapeButtonsAndRotLayout = new QHBoxLayout();
+        auto shapesGroup = new QButtonGroup();
+        for (const auto shapeId : EXShapeFactory::AllShapes) {
+            auto shape = EXShapeFactory::fromId(shapeId);
+
+            auto button = new QRadioButton(shape->displayName());
+            button->setChecked(shapeId == settings.shape);
+            connect(button, &QRadioButton::clicked, [this, shapeId, &settings]() {
+                settings.shape = shapeId;
+                Q_EMIT m_settingsState->sigSettingsChanged();
+            });
+            shapeButtonsAndRotLayout->addWidget(button);
+            shapesGroup->addButton(button);
+        }
+
+        auto wheelRotationBox = new QDoubleSpinBox();
+        wheelRotationBox->setMaximum(360);
+        wheelRotationBox->setValue(qRadiansToDegrees(settings.rotation));
+        connect(wheelRotationBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this, &settings](double val) {
+            settings.rotation = qDegreesToRadians(val);
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        shapeButtonsAndRotLayout->addWidget(new QLabel("Rotation"));
+        shapeButtonsAndRotLayout->addWidget(wheelRotationBox);
+
+        auto axesSettingsLayout = new QHBoxLayout();
+        auto swapAxesButton = new QCheckBox("Swap Axes");
+        swapAxesButton->setChecked(settings.swapAxes);
+        connect(swapAxesButton, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.swapAxes = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        auto reverseXAxisButton = new QCheckBox("Revert X Axis");
+        reverseXAxisButton->setChecked(settings.reverseX);
+        connect(reverseXAxisButton, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.reverseX = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        auto reverseYAxisButton = new QCheckBox("Revert Y Axis");
+        reverseYAxisButton->setChecked(settings.reverseY);
+        connect(reverseYAxisButton, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.reverseY = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        axesSettingsLayout->addWidget(swapAxesButton);
+        axesSettingsLayout->addWidget(reverseXAxisButton);
+        axesSettingsLayout->addWidget(reverseYAxisButton);
+
+        auto ringSettingsLayouts = new QVBoxLayout();
+        auto ringSettingsLayout1 = new QHBoxLayout();
+        auto ringThicknessBox = new QDoubleSpinBox();
+        ringThicknessBox->setValue(settings.ringThickness);
+        connect(ringThicknessBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this, &settings](double val) {
+            settings.ringThickness = val;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        auto ringMarginBox = new QDoubleSpinBox();
+        ringMarginBox->setValue(settings.ringMargin);
+        connect(ringMarginBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this, &settings](double val) {
+            settings.ringMargin = val;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        ringSettingsLayout1->addWidget(new QLabel("Ring Thickness"));
+        ringSettingsLayout1->addWidget(ringThicknessBox);
+        ringSettingsLayout1->addWidget(new QLabel("Ring Margin"));
+        ringSettingsLayout1->addWidget(ringMarginBox);
+        auto ringSettingsLayout2 = new QHBoxLayout();
+        auto ringReversed = new QCheckBox("Ring Reversed");
+        ringReversed->setChecked(settings.ringReversed);
+        connect(ringReversed, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.ringReversed = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        auto ringRotation = new QDoubleSpinBox();
+        ringRotation->setMaximum(360);
+        ringRotation->setValue(qRadiansToDegrees(settings.ringRotation));
+        connect(ringRotation, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [this, &settings](double val) {
+            settings.ringRotation = qDegreesToRadians(val);
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        ringSettingsLayout2->addWidget(ringReversed);
+        ringSettingsLayout2->addWidget(new QLabel("Ring Rotation"));
+        ringSettingsLayout2->addWidget(ringRotation);
+        auto wheelRotateWithRingBox = new QCheckBox("Plane Rotate With Ring");
+        wheelRotateWithRingBox->setChecked(settings.planeRotateWithRing);
+        connect(wheelRotateWithRingBox, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.planeRotateWithRing = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+        ringSettingsLayouts->addLayout(ringSettingsLayout1);
+        ringSettingsLayouts->addLayout(ringSettingsLayout2);
+        ringSettingsLayouts->addWidget(wheelRotateWithRingBox);
+
+        auto ringEnabled = new QCheckBox("Enable Ring");
+        ringEnabled->setChecked(settings.ringEnabled);
+        connect(ringEnabled, &QCheckBox::clicked, [this, &settings](bool checked) {
+            settings.ringEnabled = checked;
+            Q_EMIT m_settingsState->sigSettingsChanged();
+        });
+
+        pageLayout->addWidget(slidersEnabled);
+        pageLayout->addWidget(extraSlidersLabel);
+        pageLayout->addWidget(extraSlidersList);
+        if (colorModel->colorfulableChannelIndexBits() != 0) {
+            pageLayout->addWidget(colorfulPrimaryChannel);
+        } else {
+            colorfulPrimaryChannel->deleteLater();
+        }
+        if (colorModel->isSrgbBased()) {
+            clipGamutBox->deleteLater();
+        } else {
+            pageLayout->addWidget(clipGamutBox);
+        }
+        pageLayout->addLayout(shapeButtonsAndRotLayout);
+        pageLayout->addLayout(axesSettingsLayout);
+        if (colorModel->channelCount() == 3) {
+            pageLayout->addWidget(ringEnabled);
+            pageLayout->addLayout(ringSettingsLayouts);
+        } else {
+            ringEnabled->deleteLater();
+            ringSettingsLayouts->deleteLater();
+        }
+        pageLayout->addStretch(1);
+        pages->addWidget(page);
+
+        if (colorModel->colorfulableChannelIndexBits() == 0) {
+            colorfulPrimaryChannel->deleteLater();
+        }
+    }
+
+    auto model = pageSwitchers->model();
+    connect(model, &QAbstractItemModel::rowsMoved, this, &EXPerColorModelSettingsDialog::updateColorModelsOrder);
+    connect(pageSwitchers, &QListWidget::itemChanged, this, &EXPerColorModelSettingsDialog::updateColorModelsOrder);
+    connect(pageSwitchers, &QListWidget::currentItemChanged, this, [pages](QListWidgetItem *current) {
+        if (!current) {
+            return;
+        }
+        pages->setCurrentIndex(current->listWidget()->row(current));
+    });
+    m_pageSwitchers = pageSwitchers;
+
+    mainLayout->addWidget(pageSwitchers);
+    mainLayout->addLayout(pages);
+    mainLayout->addStretch(1);
+    QDialog::setLayout(mainLayout);
+}
+
+void EXPerColorModelSettingsDialog::updateColorModelsOrder()
+{
+    auto &globalSettings = m_settingsState->globalSettings;
+    globalSettings.displayOrder.clear();
+
+    for (int i = 0; i < m_pageSwitchers->count(); ++i) {
+        auto item = m_pageSwitchers->item(i);
+        auto modelId = static_cast<ColorModelId>(item->data(Qt::UserRole).toInt());
+        m_settingsState->settings[modelId].enabled = item->checkState() == Qt::CheckState::Checked;
+        globalSettings.displayOrder.append(modelId);
+    }
+
+    globalSettings.writeAll();
+    Q_EMIT m_settingsState->sigSettingsChanged();
+}
+
+void EXPerColorModelSettingsDialog::updateExtraSlidersOrder(ColorModelId colorModelId)
+{
+    auto &settings = m_settingsState->settings[colorModelId];
+    auto extraSlidersList = m_extraSlidersLists[colorModelId];
+    settings.extraSliders.clear();
+
+    for (int i = 0; i < extraSlidersList->count(); ++i) {
+        auto item = extraSlidersList->item(i);
+        if (item->checkState() == Qt::CheckState::Checked) {
+            auto modelId = static_cast<ColorModelId>(item->data(Qt::UserRole).toInt());
+            settings.extraSliders.append(modelId);
+        }
+    }
+
+    settings.writeAll();
+    Q_EMIT m_settingsState->sigSettingsChanged();
+}
+
+void EXPerColorModelSettingsDialog::closeEvent(QCloseEvent *event)
+{
+    QDialog::closeEvent(event);
+    for (auto &settings : m_settingsState->settings) {
+        settings.writeAll();
+    }
+}
+
+EXGlobalSettingsDialog::EXGlobalSettingsDialog(EXSettingsStateSP settingsState, QWidget *parent)
+    : QDialog(parent)
+    , m_settingsState(settingsState)
+{
+    auto mainLayout = new QVBoxLayout(this);
+    setWindowTitle("Extended Color Selector - Global Settings");
+    auto &settings = m_settingsState->globalSettings;
+
+    auto recordLastColorWhenMouseReleaseBox = new QCheckBox("Record Last Color When Mouse Release");
+    recordLastColorWhenMouseReleaseBox->setChecked(settings.recordLastColorWhenMouseRelease);
+    connect(recordLastColorWhenMouseReleaseBox, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.recordLastColorWhenMouseRelease = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    auto channelSpinBoxesEnabled = new QCheckBox("Show Channel Spin Boxes");
+    channelSpinBoxesEnabled->setChecked(settings.showChannelSpinBoxes);
+    connect(channelSpinBoxesEnabled, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.showChannelSpinBoxes = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    auto outOfGamutColorPicker = new OptionalColorPicker(
+        this,
+        "Out Of Gamut Color",
+        QColor::fromRgbF(settings.outOfGamutColor[0], settings.outOfGamutColor[1], settings.outOfGamutColor[2]));
+    outOfGamutColorPicker->setPickingEnabled(settings.outOfGamutColorEnabled);
+    connect(outOfGamutColorPicker->colorDialog, &QColorDialog::colorSelected, [this, &settings](const QColor &color) {
+        settings.outOfGamutColor[0] = color.redF();
+        settings.outOfGamutColor[1] = color.greenF();
+        settings.outOfGamutColor[2] = color.blueF();
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+    connect(outOfGamutColorPicker->enableBox, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.outOfGamutColorEnabled = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    auto grayModelDesaturateLayout = new QHBoxLayout();
+    auto grayModelDesaturateLabel = new QLabel("Gray Model Desaturate With");
+    auto grayModelDesaturateBox = new QComboBox();
+    for (const auto &modelId : ColorModelFactory::AllModels) {
+        auto model = ColorModelFactory::fromId(modelId);
+        if (model->isDesaturatable()) {
+            grayModelDesaturateBox->addItem(model->displayName(), static_cast<int>(modelId));
+        }
+    }
+    grayModelDesaturateBox->setCurrentIndex(
+        grayModelDesaturateBox->findData(static_cast<int>(settings.grayModelDesaturateModel)));
+    grayModelDesaturateLayout->addWidget(grayModelDesaturateLabel);
+    grayModelDesaturateLayout->addWidget(grayModelDesaturateBox);
+    connect(grayModelDesaturateBox,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            [this, &settings, grayModelDesaturateBox](int index) {
+                settings.grayModelDesaturateModel =
+                    static_cast<ColorModelId>(grayModelDesaturateBox->itemData(index).toInt());
+                Q_EMIT m_settingsState->sigSettingsChanged();
+            });
+
+    auto alwaysUseSrgbModelForHsvAndHslBox =
+        new QCheckBox("Always Use sRGB Model For HSV and HSL (Reopen document required)");
+    alwaysUseSrgbModelForHsvAndHslBox->setChecked(settings.alwaysUseSrgbModelForHsvAndHsl);
+    connect(alwaysUseSrgbModelForHsvAndHslBox, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.alwaysUseSrgbModelForHsvAndHsl = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    auto pSettingsGroup = new QGroupBox("Portable Color Selector");
+    auto pSettingsLayout = new QVBoxLayout();
+    pSettingsGroup->setLayout(pSettingsLayout);
+    auto pSettingForm = new QFormLayout();
+    auto pWidthBox = new QSpinBox();
+    pWidthBox->setMaximum(1000);
+    pWidthBox->setValue(settings.pWidth);
+    connect(pWidthBox, QOverload<int>::of(&QSpinBox::valueChanged), [this, &settings](int val) {
+        settings.pWidth = val;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+    pSettingForm->addRow("Width", pWidthBox);
+
+    auto pSettingsButtons = new QVBoxLayout();
+    auto pEnableChannelPlane = new QCheckBox("Enable Channel Plane");
+    pEnableChannelPlane->setChecked(settings.pEnableChannelPlane);
+    connect(pEnableChannelPlane, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.pEnableChannelPlane = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    auto pEnableColorModelSwitcher = new QCheckBox("Enable Color Model Switcher");
+    pEnableColorModelSwitcher->setChecked(settings.pEnableColorModelSwitcher);
+    connect(pEnableColorModelSwitcher, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.pEnableColorModelSwitcher = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    auto pEnableSliders = new QCheckBox("Enable Sliders");
+    pEnableSliders->setChecked(settings.pEnableSliders);
+    connect(pEnableSliders, &QCheckBox::clicked, [this, &settings](bool checked) {
+        settings.pEnableSliders = checked;
+        Q_EMIT m_settingsState->sigSettingsChanged();
+    });
+
+    pSettingsButtons->addWidget(pEnableChannelPlane);
+    pSettingsButtons->addWidget(pEnableColorModelSwitcher);
+    pSettingsButtons->addWidget(pEnableSliders);
+    pSettingsLayout->addLayout(pSettingsButtons);
+    pSettingsLayout->addLayout(pSettingForm);
+
+    mainLayout->addWidget(recordLastColorWhenMouseReleaseBox);
+    mainLayout->addWidget(channelSpinBoxesEnabled);
+    mainLayout->addLayout(grayModelDesaturateLayout);
+    mainLayout->addWidget(alwaysUseSrgbModelForHsvAndHslBox);
+    mainLayout->addWidget(outOfGamutColorPicker);
+    mainLayout->addWidget(pSettingsGroup);
+    mainLayout->addStretch(1);
+}
+
+void EXGlobalSettingsDialog::closeEvent(QCloseEvent *event)
+{
+    QDialog::closeEvent(event);
+    m_settingsState->globalSettings.writeAll();
+}
+
+
+
+
+

@@ -1,0 +1,136 @@
+#########################
+## EXSettingsState.h
+#########################
+
+
+
+
+#ifndef EXSETTINGSSTATE_H
+#define EXSETTINGSSTATE_H
+
+#include <QObject>
+#include <QVector>
+
+#include <kis_shared.h>
+#include <kis_shared_ptr.h>
+
+#include "EXChannelPlane.h"
+#include "EXChannelSlider.h"
+#include "EXSettings.h"
+
+class EXSettingsState : public QObject, public KisShared
+{
+    Q_OBJECT
+
+public:
+    static EXSettingsState *instance();
+
+    EXSettingsState();
+    ~EXSettingsState() override = default;
+
+    EXGlobalSettings globalSettings;
+    QVector<EXPerColorModelSettings> settings;
+
+    void connectChannelPlane(EXChannelPlane *plane);
+    void connectChannelSlider(EXChannelSlider *slider);
+
+    void applySettingsToPlane(EXChannelPlane *plane);
+    void applySettingsToSlider(EXChannelSlider *slider);
+
+Q_SIGNALS:
+    void sigSettingsChanged();
+};
+
+typedef KisSharedPtr<EXSettingsState> EXSettingsStateSP;
+
+#endif // EXSETTINGSSTATE_H
+
+
+
+
+
+#########################
+## EXSettingsState.cpp
+#########################
+
+
+
+
+#include "EXSettingsState.h"
+
+static EXSettingsState *s_instance;
+EXSettingsState *EXSettingsState::instance()
+{
+    if (!s_instance) {
+        s_instance = new EXSettingsState();
+    }
+    return s_instance;
+}
+
+EXSettingsState::EXSettingsState()
+    : QObject()
+{
+    globalSettings = EXGlobalSettings();
+
+    for (const auto &colorModelId : globalSettings.displayOrder) {
+        settings.append(EXPerColorModelSettings(ColorModelFactory::fromId(colorModelId)->displayName()));
+    }
+
+    GrayModel::DesaturateModel = ColorModelFactory::fromId(globalSettings.grayModelDesaturateModel);
+    connect(this, &EXSettingsState::sigSettingsChanged, this, [this]() {
+        GrayModel::DesaturateModel = ColorModelFactory::fromId(globalSettings.grayModelDesaturateModel);
+    });
+}
+
+void EXSettingsState::connectChannelPlane(EXChannelPlane *plane)
+{
+    applySettingsToPlane(plane);
+    connect(this, &EXSettingsState::sigSettingsChanged, plane, [this, plane]() {
+        applySettingsToPlane(plane);
+    });
+}
+
+void EXSettingsState::applySettingsToPlane(EXChannelPlane *plane)
+{
+    auto model = plane->colorModel();
+    auto &settings = this->settings[model->id()];
+    plane->setClipToSrgbGamut(settings.clipToSrgbGamut);
+    plane->setColorfulRing(settings.colorfulHueRing);
+    plane->setPrimaryChannelIndex(settings.primaryIndex);
+    plane->setSanitizeOutOfGamut(globalSettings.outOfGamutColorEnabled, globalSettings.outOfGamutColor);
+    auto shape = EXShapeFactory::fromId(settings.shape);
+    shape->reverseX = settings.reverseX;
+    shape->reverseY = settings.reverseY;
+    shape->swapAxes = settings.swapAxes;
+    shape->rotateWithRing = settings.planeRotateWithRing;
+    shape->setRotation(settings.rotation);
+    shape->ring.margin = settings.ringMargin;
+    shape->ring.thickness = settings.ringThickness;
+    shape->ring.rotationOffset = settings.ringRotation;
+    shape->ring.reversed = settings.ringReversed;
+    plane->setShape(shape);
+    plane->updateImage();
+}
+
+void EXSettingsState::connectChannelSlider(EXChannelSlider *slider)
+{
+    applySettingsToSlider(slider);
+    connect(this, &EXSettingsState::sigSettingsChanged, slider, [this, slider]() {
+        applySettingsToSlider(slider);
+    });
+}
+
+void EXSettingsState::applySettingsToSlider(EXChannelSlider *slider)
+{
+    auto [model, channelIndex] = slider->colorModelAndChannelIndex();
+    auto &settings = this->settings[model->id()];
+    slider->setSanitizeOutOfGamut(globalSettings.outOfGamutColorEnabled, globalSettings.outOfGamutColor);
+    slider->setShowChannelSpinBoxes(globalSettings.showChannelSpinBoxes);
+    slider->setColorful(settings.colorfulHueRing);
+    slider->updateImage();
+}
+
+
+
+
+

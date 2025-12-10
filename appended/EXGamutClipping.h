@@ -1,0 +1,156 @@
+#########################
+## EXGamutClipping.h
+#########################
+
+
+
+
+#ifndef EXGAMUTCLIPPING_H
+#define EXGAMUTCLIPPING_H
+
+#include <QPair>
+#include <QVector2D>
+
+#include "EXColorModel.h"
+
+class EXGamutClipping
+{
+public:
+    static EXGamutClipping *instance();
+
+    EXGamutClipping();
+    QVector2D
+    mapAxesToLimited(ColorModelId colorModel, int primary, float primaryValue, QVector2D axes);
+    QVector2D
+    unmapAxesFromLimited(ColorModelId colorModel, int primary, float primaryValue, QVector2D limited);
+
+private:
+    QVector<float> m_limits;
+
+    QPair<QVector2D, QVector2D> getAxesLimitsInterpolated(ColorModelId colorModel, int primary, float primaryValue);
+    QPair<QVector2D, QVector2D> getAxesLimits(ColorModelId colorModel, int primary, int primaryValue);
+    int getColorModelOffset(ColorModelId colorModel);
+};
+
+#endif // EXGAMUTCLIPPING_H
+
+
+
+
+
+#########################
+## EXGamutClipping.cpp
+#########################
+
+
+
+
+#include <QDebug>
+#include <QFile>
+#include <QVector>
+#include <qmath.h>
+
+#include "EXGamutClipping.h"
+
+const int Segments = 256;
+const float AxesLimitOffset = 1.0f / Segments;
+
+static EXGamutClipping *s_gamutClipping = nullptr;
+
+EXGamutClipping *EXGamutClipping::instance()
+{
+    if (!s_gamutClipping) {
+        s_gamutClipping = new EXGamutClipping();
+    }
+    return s_gamutClipping;
+}
+
+EXGamutClipping::EXGamutClipping()
+{
+    QFile file(":/extendedcolorselector/axes_limits.bytes");
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Failed to open axes_limits.bytes:" << file.errorString();
+        return;
+    }
+
+    QByteArray limitsBytes = file.readAll();
+    file.close();
+
+    QVector<float> limits;
+    const int numFloats = limitsBytes.size() / sizeof(float);
+    limits.resize(numFloats);
+    memcpy(limits.data(), limitsBytes.constData(), limitsBytes.size());
+
+    m_limits = limits;
+}
+
+int EXGamutClipping::getColorModelOffset(ColorModelId colorModel)
+{
+    switch (colorModel) {
+    case ColorModelId::Xyz:
+        return 0;
+    case ColorModelId::Lab:
+        return 1;
+    case ColorModelId::Lch:
+        return 2;
+    case ColorModelId::Oklab:
+        return 3;
+    case ColorModelId::Oklch:
+        return 4;
+    default:
+        return -1;
+    }
+}
+
+QVector2D
+EXGamutClipping::unmapAxesFromLimited(ColorModelId colorModel, int primary, float primaryValue, QVector2D axes)
+{
+    auto [minLimits, maxLimits] = getAxesLimitsInterpolated(colorModel, primary, primaryValue);
+
+    return QVector2D((axes.x() - minLimits.x()) / (maxLimits.x() - minLimits.x()),
+                     (axes.y() - minLimits.y()) / (maxLimits.y() - minLimits.y()));
+}
+
+QVector2D EXGamutClipping::mapAxesToLimited(ColorModelId colorModel, int primary, float primaryValue, QVector2D limited)
+{
+    auto [minLimits, maxLimits] = getAxesLimitsInterpolated(colorModel, primary, primaryValue);
+
+    return QVector2D(limited.x() * (maxLimits.x() - minLimits.x()) + minLimits.x(),
+                     limited.y() * (maxLimits.y() - minLimits.y()) + minLimits.y());
+}
+
+QPair<QVector2D, QVector2D>
+EXGamutClipping::getAxesLimitsInterpolated(ColorModelId colorModel, int primary, float primaryValue)
+{
+    float a = primaryValue * Segments;
+    auto [min1, max1] = getAxesLimits(colorModel, primary, qFloor(a));
+    auto [min2, max2] = getAxesLimits(colorModel, primary, qCeil(a));
+    int t = a - int(a);
+    auto minInterpolated = min1 * (1 - t) + min2 * t;
+    auto maxInterpolated = max1 * (1 - t) + max2 * t;
+
+    return {
+        minInterpolated,
+        maxInterpolated,
+    };
+}
+
+QPair<QVector2D, QVector2D> EXGamutClipping::getAxesLimits(ColorModelId colorModel, int primary, int primaryValue)
+{
+    int offset = getColorModelOffset(colorModel);
+    if (offset < 0) {
+        return {QVector2D(0, 0), QVector2D(1, 1)};
+    }
+
+    int base = (offset * 3 + primary) * (Segments + 1) + primaryValue;
+    base *= 4;
+    return {
+        QVector2D(m_limits[base + 0] - AxesLimitOffset, m_limits[base + 1] - AxesLimitOffset),
+        QVector2D(m_limits[base + 2] + AxesLimitOffset, m_limits[base + 3] + AxesLimitOffset),
+    };
+}
+
+
+
+
+

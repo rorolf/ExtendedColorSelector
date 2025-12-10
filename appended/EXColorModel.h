@@ -1,0 +1,1311 @@
+#########################
+## EXColorModel.h
+#########################
+
+
+
+
+#ifndef EXCOLORModel_H
+#define EXCOLORModel_H
+
+#include <array>
+
+#include <QVector3D>
+
+#include <KoColorModelStandardIds.h>
+#include <KoColorProfile.h>
+#include <KoColorSpace.h>
+#include <kis_shared.h>
+#include <kis_shared_ptr.h>
+
+typedef KisSharedPtr<class EXColorModel> ColorModelSP;
+
+enum ColorModelId {
+    Gray = 0,
+    Srgb = 1,
+    Hsv = 2,
+    Hsl = 3,
+    LinearRgb = 4,
+    Xyz = 5,
+    Lab = 6,
+    Lch = 7,
+    Oklab = 8,
+    Oklch = 9,
+    Okhsv = 10,
+    Okhsl = 11,
+    Normal = 12,
+};
+
+class EXColorModel : public KisShared
+{
+public:
+    virtual ~EXColorModel() = default;
+
+    virtual QVector3D toXyz(const QVector3D &color) const = 0;
+    virtual QVector3D fromXyz(const QVector3D &color) const = 0;
+
+    virtual bool isDesaturatable() const
+    {
+        return false;
+    }
+
+    virtual float desaturate(const QVector3D &color) const
+    {
+        Q_UNUSED(color);
+        return 0.0f;
+    }
+
+    virtual QVector3D fromDesaturated(float desaturated) const
+    {
+        Q_UNUSED(desaturated);
+        return QVector3D();
+    }
+
+    virtual void resolveReference(QVector3D &color, const QVector3D &reference) const
+    {
+        Q_UNUSED(color);
+        Q_UNUSED(reference);
+    }
+
+    virtual void makeColorful(QVector3D &color, int channelIndex) const
+    {
+        Q_UNUSED(color);
+        Q_UNUSED(channelIndex);
+    }
+
+    virtual int colorfulableChannelIndexBits() const
+    {
+        return 0;
+    }
+
+    virtual int wrappableChannelIndexBits() const
+    {
+        return 0;
+    }
+
+    virtual ColorModelId id() const = 0;
+    virtual QString displayName() const = 0;
+    virtual quint32 channelCount() const
+    {
+        return 3;
+    }
+    virtual std::array<QString, 3> channelNames() const = 0;
+    virtual std::array<QVector3D, 2> channelRanges() const = 0;
+    virtual bool isSrgbBased() const = 0;
+
+    virtual QVector3D unnormalize(const QVector3D &normalized)
+    {
+        auto [mn, mx] = channelRanges();
+        return normalized * (mx - mn) + mn;
+    }
+
+    virtual QVector3D normalize(const QVector3D &normalized)
+    {
+        auto [mn, mx] = channelRanges();
+        return (normalized + mn) / (mx - mn);
+    }
+
+    QVector3D transferTo(const EXColorModel *toModel, const QVector3D &color) const;
+    QVector3D transferTo(const EXColorModel *toModel, const QVector3D &color, const QVector3D &reference) const;
+};
+
+class GrayModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Gray;
+    }
+
+    QString displayName() const override
+    {
+        return "GRAY";
+    }
+
+    quint32 channelCount() const override
+    {
+        return 1;
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"V", "", ""};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(100, 0, 0)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    static ColorModelSP DesaturateModel;
+};
+
+class SRGBModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    bool isDesaturatable() const override
+    {
+        return true;
+    }
+    float desaturate(const QVector3D &color) const override;
+    QVector3D fromDesaturated(float desaturated) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Srgb;
+    }
+
+    QString displayName() const override
+    {
+        return "SRGB";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"R", "G", "B"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(100, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    static ColorModelSP IntermediateModelForHsvAndHsl; // Can be either LinearRGBModel or SRGBModel
+};
+
+class HSVModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    bool isDesaturatable() const override
+    {
+        return true;
+    }
+    float desaturate(const QVector3D &color) const override;
+    QVector3D fromDesaturated(float desaturated) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+    void makeColorful(QVector3D &color, int channelIndex) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Hsv;
+    }
+
+    QString displayName() const override
+    {
+        return "HSV";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"H", "S", "V"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(360, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    int colorfulableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+};
+
+class HSLModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    bool isDesaturatable() const override
+    {
+        return true;
+    }
+    float desaturate(const QVector3D &color) const override;
+    QVector3D fromDesaturated(float desaturated) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+    void makeColorful(QVector3D &color, int channelIndex) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Hsl;
+    }
+
+    QString displayName() const override
+    {
+        return "HSL";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"H", "S", "L"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(360, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    int colorfulableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+};
+
+class LinearRGBModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    bool isDesaturatable() const override
+    {
+        return true;
+    }
+    float desaturate(const QVector3D &color) const override;
+    QVector3D fromDesaturated(float desaturated) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::LinearRgb;
+    }
+
+    QString displayName() const override
+    {
+        return "LinearRGB";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"R", "G", "B"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(100, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+};
+
+class XYZModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Xyz;
+    }
+
+    QString displayName() const override
+    {
+        return "XYZ";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"X", "Y", "Z"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(100, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return false;
+    }
+};
+
+class LABModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    bool isDesaturatable() const override
+    {
+        return true;
+    }
+    float desaturate(const QVector3D &color) const override;
+    QVector3D fromDesaturated(float desaturated) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Lab;
+    }
+
+    QString displayName() const override
+    {
+        return "LAB";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"L", "A", "B"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, -100, -100), QVector3D(100, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return false;
+    }
+};
+
+class LCHModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Lch;
+    }
+
+    QString displayName() const override
+    {
+        return "LCH";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"L", "C", "H"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(100, 100, 360)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return false;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b100;
+    }
+};
+
+class OKLABModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    bool isDesaturatable() const override
+    {
+        return true;
+    }
+    float desaturate(const QVector3D &color) const override;
+    QVector3D fromDesaturated(float desaturated) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Oklab;
+    }
+
+    QString displayName() const override
+    {
+        return "OkLAB";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"L", "A", "B"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, -100, -100), QVector3D(100, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return false;
+    }
+};
+
+class OKLCHModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Oklch;
+    }
+
+    QString displayName() const override
+    {
+        return "OkLCH";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"L", "C", "H"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(100, 100, 360)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return false;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b100;
+    }
+};
+
+class OKHSVModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    void makeColorful(QVector3D &color, int channelIndex) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Okhsv;
+    }
+
+    QString displayName() const override
+    {
+        return "OkHSV";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"H", "S", "V"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(360, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    int colorfulableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+};
+
+class OKHSLModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+    void resolveReference(QVector3D &color, const QVector3D &reference) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Okhsl;
+    }
+
+    QString displayName() const override
+    {
+        return "OkHSL";
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"H", "S", "L"};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(0, 0, 0), QVector3D(360, 100, 100)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    int colorfulableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b001;
+    }
+};
+
+class NormalModel : public EXColorModel
+{
+public:
+    QVector3D toXyz(const QVector3D &color) const override;
+    QVector3D fromXyz(const QVector3D &color) const override;
+
+    ColorModelId id() const override
+    {
+        return ColorModelId::Normal;
+    }
+
+    QString displayName() const override
+    {
+        return "Normal";
+    }
+
+    quint32 channelCount() const override
+    {
+        return 2;
+    }
+
+    std::array<QString, 3> channelNames() const override
+    {
+        return {"X", "Y", ""};
+    }
+
+    std::array<QVector3D, 2> channelRanges() const override
+    {
+        return {QVector3D(-100, -100, 0), QVector3D(100, 100, 0)};
+    }
+
+    bool isSrgbBased() const override
+    {
+        return true;
+    }
+
+    int wrappableChannelIndexBits() const override
+    {
+        return 0b011;
+    }
+};
+
+class ColorModelFactory
+{
+public:
+    static EXColorModel *fromId(ColorModelId id)
+    {
+        switch (id) {
+        case ColorModelId::Gray:
+            return new GrayModel();
+        case ColorModelId::Srgb:
+            return new SRGBModel();
+        case ColorModelId::Hsv:
+            return new HSVModel();
+        case ColorModelId::Hsl:
+            return new HSLModel();
+        case ColorModelId::LinearRgb:
+            return new LinearRGBModel();
+        case ColorModelId::Xyz:
+            return new XYZModel();
+        case ColorModelId::Lab:
+            return new LABModel();
+        case ColorModelId::Lch:
+            return new LCHModel();
+        case ColorModelId::Oklab:
+            return new OKLABModel();
+        case ColorModelId::Oklch:
+            return new OKLCHModel();
+        case ColorModelId::Okhsv:
+            return new OKHSVModel();
+        case ColorModelId::Okhsl:
+            return new OKHSLModel();
+        case ColorModelId::Normal:
+            return new NormalModel();
+        default:
+            return nullptr;
+        }
+    }
+
+    static EXColorModel *fromName(const QString &name)
+    {
+        for (auto id : AllModels) {
+            auto model = fromId(id);
+            if (model && model->displayName() == name) {
+                return model;
+            }
+            delete model;
+        }
+        return nullptr;
+    }
+
+    static EXColorModel *fromKoColorSpace(const KoColorSpace *colorSpace)
+    {
+        auto id = colorSpace->colorModelId();
+        if (id == RGBAColorModelID) {
+            if (colorSpace->profile()->isLinear()) {
+                return new LinearRGBModel();
+            } else {
+                return new SRGBModel();
+            }
+            return new LinearRGBModel();
+        } else if (id == LABAColorModelID) {
+            return new LABModel();
+        } else if (id == XYZAColorModelID) {
+            return new XYZModel();
+        } else if (id == GrayAColorModelID) {
+            return new GrayModel();
+        } else {
+            return nullptr;
+        }
+    }
+
+    static const QVector<ColorModelId> AllModels;
+};
+
+#endif
+
+
+
+
+
+#########################
+## EXColorModel.cpp
+#########################
+
+
+
+
+#include <cmath>
+
+#include <QVector2D>
+#include <qmath.h>
+
+#include "EXColorModel.h"
+#include "ok_color.h"
+
+const float EPSILON = 1e-4f;
+
+const QVector<ColorModelId> ColorModelFactory::AllModels = {ColorModelId::Gray,
+                                                            ColorModelId::Srgb,
+                                                            ColorModelId::Hsv,
+                                                            ColorModelId::Hsl,
+                                                            ColorModelId::Xyz,
+                                                            ColorModelId::LinearRgb,
+                                                            ColorModelId::Lab,
+                                                            ColorModelId::Lch,
+                                                            ColorModelId::Oklab,
+                                                            ColorModelId::Oklch,
+                                                            ColorModelId::Okhsv,
+                                                            ColorModelId::Okhsl,
+                                                            ColorModelId::Normal};
+
+QVector3D EXColorModel::transferTo(const EXColorModel *toModel, const QVector3D &color) const
+{
+    if (toModel->id() == id()) {
+        return color;
+    }
+
+    return toModel->fromXyz(toXyz(color));
+}
+
+QVector3D
+EXColorModel::transferTo(const EXColorModel *toModel, const QVector3D &color, const QVector3D &reference) const
+{
+    if (toModel->id() == id()) {
+        return color;
+    }
+
+    auto result = toModel->fromXyz(toXyz(color));
+    toModel->resolveReference(result, reference);
+    return result;
+}
+
+const float D65_WHITE_XYZ[3]{0.95047, 1.0, 1.08883};
+const float CIE_EPSILON = 216.0 / 24389.0;
+const float CIE_KAPPA = 24389.0 / 27.0;
+
+ColorModelSP GrayModel::DesaturateModel = new OKLABModel();
+ColorModelSP SRGBModel::IntermediateModelForHsvAndHsl = new SRGBModel();
+
+float gammaFunction(float x)
+{
+    if (x <= 0) {
+        return x;
+    }
+
+    return x <= 0.04045 ? x / 12.92 : powf((x + 0.055) / 1.055, 2.4);
+}
+
+float gammaFunctionInverse(float x)
+{
+    if (x <= 0) {
+        return x;
+    }
+
+    return x <= 0.0031308 ? x * 12.92 : 1.055 * powf(x, 1.0 / 2.4) - 0.055;
+}
+
+QVector3D GrayModel::toXyz(const QVector3D &color) const
+{
+    auto c = DesaturateModel->fromDesaturated(color[0]);
+    return DesaturateModel->toXyz(c);
+}
+
+QVector3D GrayModel::fromXyz(const QVector3D &color) const
+{
+    QVector3D c = DesaturateModel->fromXyz(color);
+    return QVector3D(DesaturateModel->desaturate(c), 0.0f, 0.0f);
+}
+
+QVector3D SRGBModel::fromXyz(const QVector3D &color) const
+{
+    QVector3D linear = LinearRGBModel().fromXyz(color);
+    return QVector3D(gammaFunctionInverse(linear[0]), gammaFunctionInverse(linear[1]), gammaFunctionInverse(linear[2]));
+}
+
+QVector3D SRGBModel::toXyz(const QVector3D &color) const
+{
+    QVector3D linear = QVector3D(gammaFunction(color[0]), gammaFunction(color[1]), gammaFunction(color[2]));
+    return LinearRGBModel().toXyz(linear);
+}
+
+float SRGBModel::desaturate(const QVector3D &color) const
+{
+    return 0.2126f * color[0] + 0.7152f * color[1] + 0.0722f * color[2];
+}
+
+QVector3D SRGBModel::fromDesaturated(float desaturated) const
+{
+    return QVector3D(desaturated, desaturated, desaturated);
+}
+
+QVector3D srgbToHwb(const QVector3D &color)
+{
+    float red = color[0], green = color[1], blue = color[2];
+    float x_max = qMax((float)0, qMax(red, qMax(green, blue)));
+    float x_min = qMin((float)1, qMin(red, qMin(green, blue)));
+
+    float chroma = x_max - x_min;
+
+    float hue;
+    if (chroma == 0.0) {
+        hue = 0.0;
+    } else if (red == x_max) {
+        hue = 60.0 * (green - blue) / chroma;
+    } else if (green == x_max) {
+        hue = 60.0 * (2.0 + (blue - red) / chroma);
+    } else {
+        hue = 60.0 * (4.0 + (red - green) / chroma);
+    };
+
+    hue = hue < 0.0 ? 360.0 + hue : hue;
+
+    float whiteness = x_min;
+    float blackness = 1.0 - x_max;
+    return QVector3D(hue / 360.0, whiteness, blackness);
+}
+
+QVector3D hwbToRgb(const QVector3D &color)
+{
+    float w = color[1];
+    float v = 1. - color[2];
+
+    float h = fmodf(color[0] * 360., 360.) / 60.;
+    float i = floorf(h);
+    float f = h - i;
+
+    int ii = i;
+
+    float ff = ii % 2 == 0 ? f : 1. - f;
+
+    float n = w + ff * (v - w);
+
+    float red, green, blue;
+
+    switch (ii) {
+    case 0:
+        red = v, green = n, blue = w;
+        break;
+    case 1:
+        red = n, green = v, blue = w;
+        break;
+    case 2:
+        red = w, green = v, blue = n;
+        break;
+    case 3:
+        red = w, green = n, blue = v;
+        break;
+    case 4:
+        red = n, green = w, blue = v;
+        break;
+    case 5:
+        red = v, green = w, blue = n;
+        break;
+    default:
+        red = v, green = n, blue = w;
+        break;
+    };
+
+    return QVector3D(red, green, blue);
+}
+
+QVector3D HSVModel::fromXyz(const QVector3D &color) const
+{
+    QVector3D hwb = srgbToHwb(SRGBModel::IntermediateModelForHsvAndHsl->fromXyz(color));
+    float value = 1. - hwb[2];
+    float saturation = value != 0. ? 1. - (hwb[1] / value) : 0.;
+    return QVector3D(hwb[0], saturation, value);
+}
+
+QVector3D HSVModel::toXyz(const QVector3D &color) const
+{
+    return SRGBModel::IntermediateModelForHsvAndHsl->toXyz(
+        hwbToRgb(QVector3D(color[0], (1. - color[1]) * color[2], 1. - color[2])));
+}
+
+float HSVModel::desaturate(const QVector3D &color) const
+{
+    return color[2];
+}
+
+QVector3D HSVModel::fromDesaturated(float desaturated) const
+{
+    return QVector3D(0.0f, 0.0f, desaturated);
+}
+
+void HSVModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[1] < EPSILON) {
+        color[0] = reference[0];
+    }
+
+    if (color[2] < EPSILON) {
+        color[0] = reference[0];
+        color[1] = reference[1];
+    }
+}
+
+void HSVModel::makeColorful(QVector3D &color, int channelIndex) const
+{
+    if (channelIndex == 0) {
+        color[1] = 1.0;
+        color[2] = 1.0;
+    }
+}
+
+QVector3D HSLModel::fromXyz(const QVector3D &color) const
+{
+    auto hsv = HSVModel().fromXyz(color);
+    float saturation = hsv[1], value = hsv[2];
+    float lightness = value * (1. - saturation / 2.);
+    saturation = (lightness == 0. || lightness == 1.) ? 0. : (value - lightness) / qMin(lightness, 1.f - lightness);
+
+    return QVector3D(hsv[0], saturation, lightness);
+}
+
+QVector3D HSLModel::toXyz(const QVector3D &color) const
+{
+    float saturation = color[1], lightness = color[2];
+    float value = lightness + saturation * qMin(lightness, 1.f - lightness);
+    saturation = value == 0. ? 0. : 2. * (1. - (lightness / value));
+
+    return HSVModel().toXyz(QVector3D(color[0], saturation, value));
+}
+
+float HSLModel::desaturate(const QVector3D &color) const
+{
+    return color[2];
+}
+
+QVector3D HSLModel::fromDesaturated(float desaturated) const
+{
+    return QVector3D(0.0f, 0.0f, desaturated);
+}
+
+void HSLModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[1] < EPSILON) {
+        color[0] = reference[0];
+    }
+
+    if (color[2] < EPSILON || color[2] > 1.0f - EPSILON) {
+        color[0] = reference[0];
+        color[1] = reference[1];
+    }
+}
+
+void HSLModel::makeColorful(QVector3D &color, int channelIndex) const
+{
+    if (channelIndex == 0) {
+        color[1] = 1.0;
+        color[2] = 0.5;
+    }
+}
+
+QVector3D LinearRGBModel::toXyz(const QVector3D &color) const
+{
+    float r = color[0], g = color[1], b = color[2];
+
+    float x = r * 0.4124564 + g * 0.3575761 + b * 0.1804375;
+    float y = r * 0.2126729 + g * 0.7151522 + b * 0.072175;
+    float z = r * 0.0193339 + g * 0.119192 + b * 0.9503041;
+
+    return QVector3D(x, y, z);
+}
+
+QVector3D LinearRGBModel::fromXyz(const QVector3D &color) const
+{
+    float x = color[0], y = color[1], z = color[2];
+
+    float r = x * 3.2404542 + y * -1.5371385 + z * -0.4985314;
+    float g = x * -0.969266 + y * 1.8760108 + z * 0.041556;
+    float b = x * 0.0556434 + y * -0.2040259 + z * 1.0572252;
+
+    return QVector3D(r, g, b);
+}
+
+float LinearRGBModel::desaturate(const QVector3D &color) const
+{
+    return (color[0] + color[1] + color[2]) / 3.0f;
+}
+
+QVector3D LinearRGBModel::fromDesaturated(float desaturated) const
+{
+    return QVector3D(desaturated, desaturated, desaturated);
+}
+
+QVector3D XYZModel::fromXyz(const QVector3D &color) const
+{
+    return color;
+}
+
+QVector3D XYZModel::toXyz(const QVector3D &color) const
+{
+    return color;
+}
+
+QVector3D LABModel::fromXyz(const QVector3D &color) const
+{
+    float xr = color[0] / D65_WHITE_XYZ[0];
+    float yr = color[1] / D65_WHITE_XYZ[1];
+    float zr = color[2] / D65_WHITE_XYZ[2];
+    float fx = xr > CIE_EPSILON ? cbrtf(xr) : ((CIE_KAPPA * xr + 16.0) / 116.0);
+    float fy = yr > CIE_EPSILON ? cbrtf(yr) : ((CIE_KAPPA * yr + 16.0) / 116.0);
+    float fz = zr > CIE_EPSILON ? cbrtf(zr) : (CIE_KAPPA * zr + 16.0) / 116.0;
+    float l = 1.16 * fy - 0.16;
+    float a = 5.00 * (fx - fy);
+    float b = 2.00 * (fy - fz);
+
+    return QVector3D(l / 1.5, (a + 1.5) / 3, (b + 1.5) / 3);
+}
+
+QVector3D LABModel::toXyz(const QVector3D &color) const
+{
+    float l = 100. * color[0] * 1.5;
+    float a = 100. * (color[1] * 3 - 1.5);
+    float b = 100. * (color[2] * 3 - 1.5);
+
+    float fy = (l + 16.0) / 116.0;
+    float fx = a / 500.0 + fy;
+    float fz = fy - b / 200.0;
+    float fx3 = powf(fx, 3.0);
+    float xr = fx3 > CIE_EPSILON ? fx3 : ((116.0 * fx - 16.0) / CIE_KAPPA);
+    float yr = (l > CIE_EPSILON * CIE_KAPPA) ? powf((l + 16.0) / 116.0, 3.0) : (l / CIE_KAPPA);
+    float fz3 = powf(fz, 3.0);
+    float zr = fz3 > CIE_EPSILON ? fz3 : ((116.0 * fz - 16.0) / CIE_KAPPA);
+
+    float x = xr * D65_WHITE_XYZ[0];
+    float y = yr * D65_WHITE_XYZ[1];
+    float z = zr * D65_WHITE_XYZ[2];
+
+    return QVector3D(x, y, z);
+}
+
+float LABModel::desaturate(const QVector3D &color) const
+{
+    return color[0];
+}
+
+QVector3D LABModel::fromDesaturated(float desaturated) const
+{
+    return QVector3D(desaturated, 0.5f, 0.5f);
+}
+
+void LABModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[0] < EPSILON || color[0] > 1.0f - EPSILON) {
+        color[1] = reference[1];
+        color[2] = reference[2];
+    }
+}
+
+QVector3D LCHModel::fromXyz(const QVector3D &color) const
+{
+    auto lab = LABModel().fromXyz(color);
+    float a = lab[1] * 3 - 1.5, b = lab[2] * 3 - 1.5;
+    float c = hypotf(a, b);
+    float h = qRadiansToDegrees(atan2f(b, a));
+    if (h < 0.0) {
+        h += 360.0;
+    }
+
+    return QVector3D(lab[0] / 1.5, c / 1.5, h / 360);
+}
+
+QVector3D LCHModel::toXyz(const QVector3D &color) const
+{
+    float sin, cos;
+    sincosf(color[2] * 2 * M_PI, &sin, &cos);
+    float a = color[1] * cos;
+    float b = color[1] * sin;
+
+    return LABModel().toXyz(QVector3D(color[0] * 1.5, a / 3 + 0.5, b / 3 + 0.5));
+}
+
+void LCHModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[0] < EPSILON || color[0] > 1.0f - EPSILON) {
+        color[1] = reference[1];
+        color[2] = reference[2];
+    }
+
+    if (color[1] < EPSILON) {
+        color[2] = reference[2];
+    }
+}
+
+// https:#bottosson.github.io/posts/oklab/#converting-from-xyz-to-oklab
+QVector3D OKLABModel::fromXyz(const QVector3D &color) const
+{
+    float x = color[0], y = color[1], z = color[2];
+
+    float l_ = 0.8189330101 * x + 0.3618667424 * y - 0.1288597137 * z;
+    float m_ = 0.0329845436 * x + 0.9293118715 * y + 0.0361456387 * z;
+    float s_ = 0.0482003018 * x + 0.2643662691 * y + 0.6338517070 * z;
+
+    l_ = cbrtf(l_);
+    m_ = cbrtf(m_);
+    s_ = cbrtf(s_);
+
+    float l = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
+    float a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
+    float b = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
+
+    return QVector3D(l, a * 0.5 + 0.5, b * 0.5 + 0.5);
+}
+
+// https:#bottosson.github.io/posts/oklab/#converting-from-xyz-to-oklab
+// Inverse matrices are computed from the matrix in the post
+QVector3D OKLABModel::toXyz(const QVector3D &color) const
+{
+    float l = color[0], a = color[1] * 2 - 1, b = color[2] * 2 - 1;
+
+    float l_ = 0.9999999984 * l + 0.3963377921 * a + 0.2158037580 * b;
+    float m_ = 1.0000000088 * l - 0.10556134232 * a - 0.0638541747 * b;
+    float s_ = 1.0000000546 * l - 0.08948418209 * a - 1.2914855378 * b;
+
+    l_ = powf(l_, 3);
+    m_ = powf(m_, 3);
+    s_ = powf(s_, 3);
+
+    float x = +1.2270138511 * l_ - 0.5577999806 * m_ + 0.2812561489 * s_;
+    float y = -0.0405801784 * l_ + 1.1122568696 * m_ - 0.0716766786 * s_;
+    float z = -0.0763812845 * l_ - 0.4214819784 * m_ + 1.5861632204 * s_;
+
+    return QVector3D(x, y, z);
+}
+
+float OKLABModel::desaturate(const QVector3D &color) const
+{
+    return color[0];
+}
+
+QVector3D OKLABModel::fromDesaturated(float desaturated) const
+{
+    return QVector3D(desaturated, 0.5f, 0.5f);
+}
+
+void OKLABModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[0] < EPSILON || color[0] > 1.0f - EPSILON) {
+        color[1] = reference[1];
+        color[2] = reference[2];
+    }
+}
+
+QVector3D OKLCHModel::fromXyz(const QVector3D &color) const
+{
+    auto oklab = OKLABModel().fromXyz(color);
+    float a = oklab[1] * 2 - 1, b = oklab[2] * 2 - 1;
+
+    float chroma = hypotf(a, b);
+    float hue = qRadiansToDegrees(atan2f(b, a));
+    if (hue < 0) {
+        hue += 360;
+    }
+
+    return QVector3D(oklab[0], chroma, hue / 360);
+}
+
+QVector3D OKLCHModel::toXyz(const QVector3D &color) const
+{
+    float sin, cos;
+    sincosf(qDegreesToRadians(color[2] * 360), &sin, &cos);
+    float a = color[1] * cos;
+    float b = color[1] * sin;
+
+    return OKLABModel().toXyz(QVector3D(color[0], a * 0.5 + 0.5, b * 0.5 + 0.5));
+}
+
+void OKLCHModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[0] < EPSILON || color[0] > 1.0f - EPSILON) {
+        color[1] = reference[1];
+        color[2] = reference[2];
+    }
+
+    if (color[1] < EPSILON) {
+        color[2] = reference[2];
+    }
+}
+
+QVector3D OKHSVModel::fromXyz(const QVector3D &color) const
+{
+    auto rgb = LinearRGBModel().fromXyz(color);
+    auto okhsv = ok_color::linear_rgb_to_okhsv(ok_color::RGB{rgb[0], rgb[1], rgb[2]});
+    // Avoid singularity
+    okhsv.s = qBound(0.0f, okhsv.s, 1.0f - 1e-3f);
+    return QVector3D(okhsv.h, okhsv.s, okhsv.v);
+}
+
+QVector3D OKHSVModel::toXyz(const QVector3D &color) const
+{
+    auto rgb = ok_color::okhsv_to_linear_rgb(ok_color::HSV{color[0], qBound(0.0f, color[1], 1.0f - 1e-3f), color[2]});
+    auto xyz = LinearRGBModel().toXyz(QVector3D(rgb.r, rgb.g, rgb.b));
+    return QVector3D(xyz[0], xyz[1], xyz[2]);
+}
+
+void OKHSVModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[1] < EPSILON) {
+        color[0] = reference[0];
+    }
+
+    if (color[2] < EPSILON) {
+        color[0] = reference[0];
+        color[1] = reference[1];
+    }
+}
+
+void OKHSVModel::makeColorful(QVector3D &color, int channelIndex) const
+{
+    if (channelIndex == 0) {
+        color[1] = 1.0;
+        color[2] = 1.0;
+    }
+}
+
+QVector3D OKHSLModel::fromXyz(const QVector3D &color) const
+{
+    auto rgb = LinearRGBModel().fromXyz(color);
+    auto okhsl = ok_color::linear_rgb_to_okhsl(ok_color::RGB{rgb[0], rgb[1], rgb[2]});
+    return QVector3D(okhsl.h, okhsl.s, okhsl.l);
+}
+
+QVector3D OKHSLModel::toXyz(const QVector3D &color) const
+{
+    auto rgb = ok_color::okhsl_to_linear_rgb(ok_color::HSL{color[0], color[1], color[2]});
+    auto xyz = LinearRGBModel().toXyz(QVector3D(rgb.r, rgb.g, rgb.b));
+    return QVector3D(xyz[0], xyz[1], xyz[2]);
+}
+
+void OKHSLModel::resolveReference(QVector3D &color, const QVector3D &reference) const
+{
+    if (color[1] < EPSILON) {
+        color[0] = reference[0];
+    }
+
+    if (color[2] < EPSILON || color[2] > 1.0f - EPSILON) {
+        color[0] = reference[0];
+        color[1] = reference[1];
+    }
+}
+
+QVector3D NormalModel::toXyz(const QVector3D &color) const
+{
+    auto normalXy = color.toVector2D() * 2.0f - QVector2D(1.0f, 1.0f);
+    auto lenSq = normalXy.lengthSquared();
+    if (lenSq > 1.0f) {
+        normalXy /= sqrtf(lenSq);
+        lenSq = 1.0f;
+    }
+    float z = sqrtf(qBound(0.0f, 1.0f - lenSq, 1.0f));
+    auto normal = QVector3D(normalXy.x(), normalXy.y(), z);
+    return LinearRGBModel().toXyz(normal * 0.5f + QVector3D(0.5f, 0.5f, 0.5f));
+}
+
+QVector3D NormalModel::fromXyz(const QVector3D &color) const
+{
+    auto rgb = LinearRGBModel().fromXyz(color);
+    auto normal = rgb * 2.0f - QVector3D(1.0f, 1.0f, 1.0f);
+    auto normalXy = normal.toVector2D();
+    normalXy = (normalXy + QVector2D(1.0f, 1.0f)) * 0.5f;
+    return normalXy.toVector3D();
+}
+
+
+
+
+
