@@ -100,6 +100,40 @@ public:
 
     QVector3D transferTo(const EXColorModel *toModel, const QVector3D &color) const;
     QVector3D transferTo(const EXColorModel *toModel, const QVector3D &color, const QVector3D &reference) const;
+
+    static const QString modelNameFromId(ColorModelId id)
+    {
+        std::array<QString, 13> names = {
+            "GRAY", "SRGB", "HSV", "HSL",
+            "LinearRGB", "XYZ",
+            "LAB", "LCH", "OkLAB", "OkLCH",
+            "OkHSV", "OkHSL", "Normal"
+        };
+        if (id<0 | id>=13)
+            return "";
+        else
+            return names[id];
+    }
+
+    static bool modelIdFromName(const QString& name, ColorModelId& out)
+    {
+        std::array<const char*, 13> names = {
+            "GRAY", "SRGB", "HSV", "HSL",
+            "LinearRGB", "XYZ",
+            "LAB", "LCH", "OkLAB", "OkLCH",
+            "OkHSV", "OkHSL", "Normal"
+        };
+
+        for (size_t k=0; k<13; ++k)
+        {
+            if (name == names[k])
+            {
+                out = static_cast<ColorModelId>(k);
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 class GrayModel : public EXColorModel
