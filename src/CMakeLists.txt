@@ -18,6 +18,12 @@ set(
     EXShape.cpp
     EXUtils.cpp
     OptionalColorPicker.cpp
+
+    EXColorMixState.cpp
+    EXColorPresetStore.cpp
+    EXColorMixerDock.cpp
+    EXColorPatchWidget.cpp
+
 )
 
 qt5_add_resources(extendedcolorselector_RESOURCES resources.qrc)
