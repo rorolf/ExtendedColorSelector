@@ -49,4 +49,18 @@ QColor getContrastingColor(const QColor &color);
 bool testFlag(int flags, int flag);
 } // namespace ExtendedUtils
 
+
+
+inline void exAssert(bool condition, const QString& msg)
+{
+    if (!condition)
+    {
+        #ifdef QT_DEBUG
+            qFatal("%s", qPrintable(msg));  // abort
+        #else
+            qWarning() << msg;              // log only
+        #endif
+    }
+}
+
 #endif // EXTENDEDUTILS_H
