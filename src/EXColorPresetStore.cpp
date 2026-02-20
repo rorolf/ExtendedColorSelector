@@ -115,3 +115,36 @@ void EXColorPresetStore::writeSettings()
     m_configGroup.sync();
 }
 
+
+
+
+void EXColorPresetStore::onPresetSelected(int newPreset)
+{
+    m_activePreset = newPreset;
+    writeSettings();
+}
+
+void EXColorPresetStore::onMixColorChannelSelected(int newChannel)
+{
+    m_selectedColorMixChannel = newChannel;
+    writeSettings();
+}
+
+void EXColorPresetStore::onColorSpaceSelected(ColorModelId newClrModel)
+{
+    m_colorMixPresets[m_activePreset].m_colorModel = ColorModelFactory::fromId(newClrModel);
+    writeSettings();
+}
+
+void EXColorPresetStore::onGradientModeSelected(bool mixFromGradients)
+{
+    m_colorMixPresets[m_activePreset].m_mixFromGradients = mixFromGradients;
+    writeSettings();
+}
+
+void EXColorPresetStore::onMixColorSelected(int clrChannelIndex, QVector3D newClr)
+{
+    m_colorMixPresets[m_activePreset].m_ingredientMixColors[clrChannelIndex] = newClr;
+    writeSettings();
+}
+
