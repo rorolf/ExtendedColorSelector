@@ -109,7 +109,7 @@ public:
             "LAB", "LCH", "OkLAB", "OkLCH",
             "OkHSV", "OkHSL", "Normal"
         };
-        if (id<0 | id>=13)
+        if ((id<0) | (id>=13))
             return "";
         else
             return names[id];
