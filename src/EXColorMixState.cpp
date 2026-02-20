@@ -288,6 +288,24 @@ void EXColorMixState::onDisplayConfigChanged()
     }
 }
 
+void EXColorMixState::onColorPresetChanged(int newPresetIndex)
+{
+    EXColorPresetStore* store = EXColorPresetStore::instance();
+    EXColorPreset* newPreset = &store->m_colorMixPresets[newPresetIndex];
+    m_colorModel = newPreset->m_colorModel;
+    m_mixIngredientColors = newPreset->m_ingredientMixColors;
+    // m_mixFromGradients = nextPreset.m_mixFromGradients;
+    // TODO: copy Gradients over
+
+
+    mixColors();
+}
+void EXColorMixState::onIngredientColorWeightChanged(int weightIndex, float value)
+{
+    m_mixIngredientColorWeights[weightIndex] = value;
+    mixColors();
+}
+
 //TODO: change UI, and change these methods
 //TODO: move logic into UI
 
