@@ -74,8 +74,8 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void onDisplayConfigChanged();
-    void onColorPresetChanged(); //when switching between presets and changing presets themselves
-    void onIngredientColorWeightChanged();
+    void onColorPresetChanged(int newPresetIndex); //when switching between presets and changing presets themselves
+    void onIngredientColorWeightChanged(int weightIndex, float value);
 
 private:
     QVector3D m_color;
@@ -84,10 +84,11 @@ private:
     std::array<QVector3D, 8> m_mixIngredientColors;
     //float m_kritaBaseColorWeight; // implicitly set to a fixed value
     std::array<float, 8> m_mixIngredientColorWeights;
-    // std::array<std::vector<QVector3D>,7> mixGradientColors
-    // std::array<std::vector<float>,7> mixGradientStopPositions
-    // std::array<float,7> mixGradientColorPositions
-    // float mixGradientWeight
+    // bool m_mixFromGradients;
+    // std::array<std::vector<QVector3D>,7> mixGradientColors;
+    // std::array<std::vector<float>,7> mixGradientStopPositions;
+    // std::array<float,7> mixGradientColorPositions;
+    // float mixGradientWeight;
 
     quint32 m_primaryChannelIndex;
     ColorModelSP m_colorModel;
