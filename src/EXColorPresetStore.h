@@ -21,30 +21,23 @@
 #include "EXColorModel.h"
 
 
-
-class EXColorPreset : public QObject, public KisShared
+class EXColorPreset
 {
-    Q_OBJECT
+    public:
+        EXColorPreset() {};
+        //~EXColorPreset() override = default;
 
-public:
-    EXColorPreset();
-    ~EXColorPreset() override = default;
+        ColorModelSP m_colorModel;
+        // TODO: How to replace the colorspace pointer?
+        //const KoColorSpace *m_currentColorSpace;
 
-    ColorModelSP m_colorModel;
-    // TODO: How to replace the colorspace pointer?
-    //const KoColorSpace *m_currentColorSpace;
+        bool m_mixFromGradients; // length 8
+        std::array<QVector3D, 8> m_ingredientMixColors;
+        //std::array<std::vector<QVector3D>, 7> m_ingredientMixGradients;
+        //std::array<std::vector<float>, 7> m_ingredientGradientStopPositions;
+        //float m_mixFromGradientStrength;
 
-    bool m_mixFromGradients; // length 8
-    std::array<QVector3D, 8> m_ingredientMixColors;
-    //std::array<std::vector<QVector3D>, 7> m_ingredientMixGradients;
-    //std::array<std::vector<float>, 7> m_ingredientGradientStopPositions;
-    //float m_mixFromGradientStrength;
-
-Q_SIGNALS:
-
-public Q_SLOTS:
-
-private:
+    private:
 };
 
 
@@ -58,7 +51,7 @@ public:
 
     KConfigGroup m_configGroup;
 
-    size_t m_activePreset;
+    int m_activePreset;
     std::array<EXColorPreset, 8> m_colorMixPresets;
 
     int m_selectedColorMixChannel;
@@ -74,11 +67,11 @@ Q_SIGNALS:
     void sigMixColorChannelOutOfFocus(); // reenables EXColorState updates
 
 public Q_SLOTS:
-    void onPresetSelected();
-    void onMixColorChannelSelected();
-    void onColorSpaceSelected();
-    void onGradientModeSelected();
-    void onColorSelected();
+    void onPresetSelected(int newPreset);
+    void onMixColorChannelSelected(int newChannel);
+    void onColorSpaceSelected(ColorModelId newClrModel);
+    void onGradientModeSelected(bool mixFromGradients);
+    void onMixColorSelected(int clrChannelIndex, QVector3D newClr);
 
 private:
 
