@@ -29,8 +29,7 @@ EXColorPresetStore *EXColorPresetStore::instance()
 EXColorPresetStore::EXColorPresetStore()
     : m_configGroup(KSharedConfig::openConfig()->group(EXSettingsGroupName))
     , m_activePreset(0)
-    , m_colorMixPresets {}
-
+    , m_colorMixPresets{}
     , m_selectedColorMixChannel(-1)
 {
     m_activePreset = m_configGroup.readEntry("EXColorPresets" ".activePreset", 0);
@@ -64,14 +63,17 @@ EXColorPresetStore::EXColorPresetStore()
         std::array<QVector3D, 8> ingredientMixColors = colorMixPresets[k1].m_ingredientMixColors;
         for (size_t k2=0; k2<8; ++k2)
         {
-            ingredientMixColors[k2] = m_configGroup.readEntry(
+            QList<float> deflt{0.0f, 0.0f, 0.0f};
+            QList<float> mixClr = m_configGroup.readEntry(
                 "EXColorPresets"
                 ".Preset" + QString::number(k1) +
                 ".ingredientMixColor" + QString::number(k2)
-                , QVector3D()
+                , deflt
             );
+            ingredientMixColors[k2] = QVector3D(mixClr[0],mixClr[1],mixClr[2]);
         }
     }
+    m_colorMixPresets = colorMixPresets;
     m_selectedColorMixChannel = m_configGroup.readEntry("EXColorPresets" ".selectedColorMixChannel",-1);
 }
 
@@ -98,11 +100,13 @@ void EXColorPresetStore::writeSettings()
 
         for (size_t k2=0; k2<8; ++k2)
         {
-            m_configGroup.readEntry(
+            QVector3D val = m_colorMixPresets[k1].m_ingredientMixColors[k2];
+            QList<float> valList{val[0], val[1], val[2]};
+            m_configGroup.writeEntry(
                 "EXColorPresets"
                 ".Preset" + QString::number(k1) +
                 ".ingredientMixColor" + QString::number(k2)
-                , m_colorMixPresets[k1].m_ingredientMixColors[k2]
+                , valList
             );
         }
     }
