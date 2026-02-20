@@ -67,13 +67,12 @@ void EXColorMixState::setColorModel(ColorModelId model)
         m_mixIngredientColors[k] = m_colorModel->transferTo(newModel, m_mixIngredientColors[k], m_mixIngredientColors[k]);
         ExtendedUtils::saturateColor(m_mixIngredientColors[k]);
     }
-    this->mixColors();
 
     m_colorModel = newModel;
     m_koColorConverter = new EXKoColorConverter(m_currentColorSpace);
 
     Q_EMIT sigColorModelChanged(model);
-    Q_EMIT sigColorChanged(m_color);
+    this->mixColors();
 }
 
 void EXColorMixState::mixColors()
@@ -126,8 +125,8 @@ void EXColorMixState::syncFromKrita()
     //setColor(m_color);
 
     if (newColor != m_kritaBaseColor) {
-        m_kritaBaseColor = kritaColorModel()->transferTo(m_colorModel, newColor, m_kritaBaseColor);
-        setColor(m_kritaBaseColor);
+        newColor = kritaColorModel()->transferTo(m_colorModel, newColor, m_kritaBaseColor);
+        setColor(newColor);
     }
 
 }
@@ -229,15 +228,14 @@ KoColor EXColorMixState::koColor() const
 
 QColor EXColorMixState::qColor() const
 {
-    return this->toQColor(m_color)
+    return this->toQColor(m_color);
 }
 
 void EXColorMixState::setColor(const QVector3D &color)
 {
     m_kritaBaseColor = color;
-    this->mixColors();
     Q_EMIT sigKritaBaseColorChanged(m_kritaBaseColor);
-    Q_EMIT sigColorChanged(m_color);
+    this->mixColors();
 }
 
 const KoColorSpace *EXColorMixState::colorSpace() const
