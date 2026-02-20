@@ -55,7 +55,7 @@ private:
     int m_selectedColorPatchWidget;
     std::array<EXColorPatchWidget*, 8> m_colorPatchWidgets;
 
-    QRadioButton *m_mixingModeSelector;
+    QButtonGroup *m_mixingModeSelector;
 
     EXColorMixStateSP m_colorMixState;
 
@@ -70,18 +70,20 @@ private:
     EXSettingsStateSP m_settingsState;
 
 
-    KisPopupButton *m_colorSpaceSelectorButton;
+    //KisPopupButton *m_colorSpaceSelectorButton;
     //KisColorSpaceSelector *m_colorSpaceSelector;
-    QPushButton *m_useLayerColorSpaceButton;
+    // QPushButton *m_useLayerColorSpaceButton;
 
     void updateSliders();
 
+Q_SIGNALS:
+    void sigPresetSelected(const int preset);
+    void sigColorMixChannelSelected(const int colorMixChannel);
+    void sigColorMixChannelModeSelected(const bool isGradient);
+
 public Q_SLOTS:
-    void onPresetSelected(const size_t preset);
     void onColorSpaceSelected(const KoColorSpace *colorSpace);
 
-    void onColorMixChannelSelected(const int colorMixChannel);
-    void onColorMixChannelModeSelected(const bool isGradient);
 };
 
 #endif // EXTENDEDCOLORMIXERDOCK_H
