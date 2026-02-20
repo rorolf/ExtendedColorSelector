@@ -5,6 +5,7 @@
 
 
 #include "EXColorMixState.h"
+#include "EXColorPresetStore.h"
 #include "EXSettingsState.h"
 #include "EXUtils.h"
 #include "KoColor.h"
