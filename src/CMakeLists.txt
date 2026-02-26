@@ -19,6 +19,8 @@ set(
     EXUtils.cpp
     OptionalColorPicker.cpp
 
+    RtMidi.cpp
+
     EXColorMixState.cpp
     EXColorPresetStore.cpp
     EXColorMixerDock.cpp

@@ -1,4 +1,4 @@
-#include "MidiListener.h"
+#include "EXMIDIListener.h"
 #include <QMetaObject>
 #include <QDebug>
 
@@ -31,7 +31,7 @@ void MidiListener::openPort(int index)
         midiIn->openPort(index);
         midiIn->setCallback(&MidiListener::midiCallback, this);
     } catch (RtMidiError& e) {
-        emit errorOccurred(QString::fromStdString(e.getMessage()));
+        emit sigErrorOccurred(QString::fromStdString(e.getMessage()));
     }
 }
 
@@ -47,7 +47,7 @@ void MidiListener::midiCallback(double, std::vector<unsigned char>* message, voi
     auto* self = static_cast<MidiListener*>(userData);
     QByteArray data(reinterpret_cast<const char*>(message->data()), int(message->size()));
 
-    QMetaObject::invokeMethod(self, "midiMessageReceived",
+    QMetaObject::invokeMethod(self, "sigMidiMessageReceived",
                               Qt::QueuedConnection,
                               Q_ARG(QByteArray, data));
 }

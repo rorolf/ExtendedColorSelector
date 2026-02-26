@@ -31,7 +31,7 @@ inline QString midiEventTypeToString(MidiEventType t) {
 }
 
 
-inline const MidiEventType midiEventTypeFromString(const QString s) {
+inline MidiEventType midiEventTypeFromString(const QString s) {
     if (s == "NoteOn") { return MidiEventType::NoteOn; }
     else if (s == "NoteOff") { return MidiEventType::NoteOff; }
     else if (s == "ControlChange") { return MidiEventType::ControlChange; }

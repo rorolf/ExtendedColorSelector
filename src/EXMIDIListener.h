@@ -1,8 +1,8 @@
 #pragma once
 
 #include <QObject>
-#include <RtMidi.h>
-#include "MappingEntry.h"
+#include "RtMidi.h"
+#include "EXMIDIMappingEntry.h"
 
 class MidiListener : public QObject
 {
@@ -16,9 +16,9 @@ public:
     void openPort(int index);
     void closePort();
 
-signals:
-    void midiMessageReceived(const QByteArray& data);
-    void errorOccurred(const QString& message);
+Q_SIGNALS:
+    void sigMidiMessageReceived(const QByteArray& data);
+    void sigErrorOccurred(const QString& message);
 
 private:
     RtMidiIn* midiIn;

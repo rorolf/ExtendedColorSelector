@@ -1,4 +1,4 @@
-#include "MidiEvent.h"
+#include "EXMIDIEvent.h"
 
 QString MidiEvent::toString() const {
     QString typeStr;
