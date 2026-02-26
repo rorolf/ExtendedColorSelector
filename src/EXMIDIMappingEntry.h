@@ -30,23 +30,24 @@ inline InputBehavior inputBehaviorFromString(const QString s) {
 }
 
 struct MappingEntry {
-    MidiEventType eventType;
-    int code;
-    InputBehavior behavior;
-    QString mappedAction;
+    public:
+        MidiEventType eventType;
+        int code;
+        InputBehavior behavior;
+        QString mappedAction;
 
-    // Runtime state
-    bool isActive = false;
-    bool isResponsive = true;  // For Switch only
-    int threshold = 6;
+        // Runtime state
+        bool isActive = false;
+        bool isResponsive = true;  // For Switch only
+        int threshold = 6;
 
-    // Switch hysteresis margin (defaults to 10, can be adjusted later)
-    int hysteresis = 10;
+        // Switch hysteresis margin (defaults to 10, can be adjusted later)
+        int hysteresis = 10;
 
-    //whether it reacts to an event
-    bool matchesEvent(const MidiEvent& incomingType);
-    // Logic handler
-    bool processInput(int value, QString& resultText);
+        //whether it reacts to an event
+        bool matchesEvent(const MidiEvent& incomingType);
+        // Logic handler
+        bool processInput(int value, QString& resultText);
 };
 
 
