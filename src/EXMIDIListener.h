@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include "EXMIDIEvent.h"
 #include "RtMidi.h"
 #include "EXMIDIMappingEntry.h"
 
@@ -17,12 +18,10 @@ public:
     void closePort();
 
 Q_SIGNALS:
-    void sigMidiMessageReceived(const QByteArray& data);
+    void sigMidiMessageArrived(const MidiEvent midiData);
     void sigErrorOccurred(const QString& message);
 
 private:
     RtMidiIn* midiIn;
     static void midiCallback(double, std::vector<unsigned char>*, void* userData);
-
-    QList<MappingEntry> mappings;
 };

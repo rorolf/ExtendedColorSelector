@@ -45,9 +45,35 @@ void MidiListener::closePort()
 void MidiListener::midiCallback(double, std::vector<unsigned char>* message, void* userData)
 {
     auto* self = static_cast<MidiListener*>(userData);
-    QByteArray data(reinterpret_cast<const char*>(message->data()), int(message->size()));
+    if (!self) return;
 
-    QMetaObject::invokeMethod(self, "sigMidiMessageReceived",
+    QByteArray messageData(reinterpret_cast<const char*>(message->data()), int(message->size()));
+    if (messageData.size() < 3) return;
+
+    MidiEvent midiData = MidiEvent::fromRtMidiMessage(messageData);
+
+    if (midiData.type != MidiEventType::Unknown) {
+        QMetaObject::invokeMethod(self, "sigMidiMessageArrived",
                               Qt::QueuedConnection,
-                              Q_ARG(QByteArray, data));
+                              Q_ARG(MidiEvent, midiData));
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

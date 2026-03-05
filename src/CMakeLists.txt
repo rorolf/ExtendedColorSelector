@@ -20,11 +20,20 @@ set(
     OptionalColorPicker.cpp
 
     RtMidi.cpp
+    EXMIDIEvent.cpp
+    EXMIDIMappingEntry.cpp
+    EXMIDIMapper_PresetControl.cpp
+    EXMIDIListener.cpp
+    EXMIDIDemultiplexer.h
+    EXMIDILogPanelWidget.cpp
+    EXMIDIMappingTableWidget.cpp
+    EXMIDIPanelWidget.cpp
 
     EXColorMixState.cpp
     EXColorPresetStore.cpp
     EXColorMixerDock.cpp
     EXColorPatchWidget.cpp
+    EXActionbus.cpp
 
 )
 

@@ -1,5 +1,7 @@
 #pragma once
 
+
+#include <QMetaType>
 #include <QString>
 
 enum class MidiEventType {
@@ -19,6 +21,7 @@ struct MidiEvent {
     bool isValid() const;
     static MidiEvent fromRtMidiMessage(const QByteArray& data);
 };
+Q_DECLARE_METATYPE(MidiEvent)
 
 inline QString midiEventTypeToString(MidiEventType t) {
     switch (t) {

@@ -1,7 +1,7 @@
 #include "EXMIDIMappingEntry.h"
 
 bool MappingEntry::matchesEvent(const MidiEvent& incomingEvent) {
-    if (this->code != incomingEvent.code) {
+    if (this->eventCode != incomingEvent.code) {
         return false;
     }
 
@@ -9,7 +9,7 @@ bool MappingEntry::matchesEvent(const MidiEvent& incomingEvent) {
         return false;
     }
 
-    if (this->behavior == InputBehavior::Button || this->behavior == InputBehavior::Switch) {
+    if (this->inputBehavior == InputBehavior::Button || this->inputBehavior == InputBehavior::Switch) {
         bool isThisNote = (this->eventType == MidiEventType::NoteOn || this->eventType == MidiEventType::NoteOff);
         bool isIncomingNote = (incomingEvent.type == MidiEventType::NoteOn || incomingEvent.type == MidiEventType::NoteOff);
 
@@ -25,12 +25,12 @@ bool MappingEntry::matchesEvent(const MidiEvent& incomingEvent) {
 }
 
 
-
+// returns true when signal is active
 bool MappingEntry::processInput(int value, QString& resultText)
 {
     resultText.clear();
 
-    switch (behavior) {
+    switch (inputBehavior) {
         case InputBehavior::Knob:
             resultText = QString("Value: %1").arg(value);
             return true;
