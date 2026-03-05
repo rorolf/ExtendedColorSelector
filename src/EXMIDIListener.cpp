@@ -1,11 +1,15 @@
 #include "EXMIDIListener.h"
+#include "EXMIDIEvent.h"
 #include <QMetaObject>
 #include <QDebug>
 
 MidiListener::MidiListener(QObject* parent)
     : QObject(parent), midiIn(new RtMidiIn())
 {
-    midiIn->ignoreTypes(false, false, false);
+    // Do not ignore sysex messages
+    // Do not ignore timing messages
+    // DO ignore active sensing messages (continuous stream of current state)
+    midiIn->ignoreTypes(false, false, true);
 }
 
 MidiListener::~MidiListener()
