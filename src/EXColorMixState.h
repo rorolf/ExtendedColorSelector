@@ -30,6 +30,7 @@ class EXColorMixState : public QObject, public KisShared
 
 public:
     EXColorMixState();
+    static EXColorMixState *instance();
     ~EXColorMixState() override = default;
 
     void setPrimaryChannelValue(float value);
@@ -59,8 +60,6 @@ public:
     void connectChannelPlane(EXChannelPlane *plane);
     void connectChannelSlider(EXChannelSlider *slider);
     void clearConnectedChannelSliders();
-
-    static EXColorMixState *instance();
 
     // additional
     void mixColors();
