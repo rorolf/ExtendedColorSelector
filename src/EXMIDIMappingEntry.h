@@ -90,28 +90,36 @@ inline QString EXMappedMidiActionToString(EXMappedMidiAction action) {
 }
 
 inline EXMappedMidiAction EXMappedMidiActionFromString(QString actionstring) {
-    std::array<QString, 17> actions = {
-            "Select Preset 1", "Select Preset 2", "Select Preset 3", "Select Preset 4",
-            "Select Preset 5", "Select Preset 6", "Select Preset 7", "Select Preset 8",
-            "Turn Knob 1", "Turn Knob 2", "Turn Knob 3", "Turn Knob 4",
-            "Turn Knob 5", "Turn Knob 6", "Turn Knob 7", "Turn Knob 8",
-            "None"
-        };
+    const std::array<const QString, 17>& actions = EXMappedMidiActionTexts();
 
-    for (int k=0; k<16; ++k)
+    for (int k=0; k<17; ++k)
         if (actions[k] == actionstring) return static_cast<EXMappedMidiAction>(k);
 
     return EXMappedMidiAction::None;
 }
 
+inline bool MidiActionMapsToKnob(EXMappedMidiAction action) {
+    return (int)action <8;
+}
 
+inline bool MidiActionMapsToPad(EXMappedMidiAction action) {
+    int a = (int)action;
+    return (8<=a) && (a<16);
+}
+
+inline int MidiActionDeviceIndex(EXMappedMidiAction action) {
+    if (action == EXMappedMidiAction::None) { return -1; }
+    else { return (int)action % 8; }
+}
 
 struct MappingEntry {
     public:
-        MidiEventType eventType;
-        int eventCode;
-        InputBehavior inputBehavior;
-        EXMappedMidiAction mappedAction;
+        static MappingEntry EmptyMappingEntry() { MappingEntry e; return e; }
+
+        MidiEventType eventType = MidiEventType::Unknown;
+        int eventCode = 0;
+        InputBehavior inputBehavior = InputBehavior::Knob;
+        EXMappedMidiAction mappedAction=EXMappedMidiAction::None;
 
         // Runtime state
         bool isActive = false;
@@ -122,9 +130,10 @@ struct MappingEntry {
         int hysteresis = 10;
 
         //whether it reacts to an event
-        bool matchesEvent(const MidiEvent& incomingType);
-        // Logic handler
-        bool processInput(int value, QString& resultText);
+        bool matchesEvent(const MidiEvent& incomingType) const;
+        bool mapsToPad() const;
+        bool mapsToKnob() const;
+        int deviceIndex() const;
 };
 
 
