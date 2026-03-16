@@ -19,15 +19,28 @@
 
 #include "EXChannelPlane.h"
 #include "EXChannelSlider.h"
-#include "EXColorMixState.h"
 #include "EXColorModelSwitchers.h"
-#include "EXColorPatchPopup.h"
-#include "EXColorPatchWidget.h"
-#include "EXColorPresetStore.h"
 #include "EXColorState.h"
+#include "EXColorPatchPopup.h"
 #include "EXPortableColorSelector.h"
 #include "EXSettingsDialog.h"
 #include "EXSettingsState.h"
+
+#include "EXColorMixState.h"
+#include "EXColorPatchWidget.h"
+#include "EXColorPresetStore.h"
+#include "EXMIDIPanelWidget.h"
+
+//################################################################################
+//## Forward Declarations
+//################################################################################
+
+class EXActionBus;
+typedef KisSharedPtr<EXActionBus> EXActionBusSP;
+
+//################################################################################
+//## Header subject
+//################################################################################
 
 class EXColorMixerDock : public QDockWidget, public KisMainwindowObserver
 {
