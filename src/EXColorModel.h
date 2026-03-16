@@ -10,6 +10,7 @@
 #include <KoColorSpace.h>
 #include <kis_shared.h>
 #include <kis_shared_ptr.h>
+#include <qchar.h>
 
 typedef KisSharedPtr<class EXColorModel> ColorModelSP;
 
@@ -101,28 +102,28 @@ public:
     QVector3D transferTo(const EXColorModel *toModel, const QVector3D &color) const;
     QVector3D transferTo(const EXColorModel *toModel, const QVector3D &color, const QVector3D &reference) const;
 
+    static const std::array<const QString, 13>& colorModelNames() {
+        static const std::array<const QString, 13> colorNames = {
+                "GRAY", "SRGB", "HSV", "HSL",
+                "LinearRGB", "XYZ",
+                "LAB", "LCH", "OkLAB", "OkLCH",
+                "OkHSV", "OkHSL", "Normal"
+        };
+
+        return colorNames;
+    }
+
     static const QString modelNameFromId(ColorModelId id)
     {
-        std::array<QString, 13> names = {
-            "GRAY", "SRGB", "HSV", "HSL",
-            "LinearRGB", "XYZ",
-            "LAB", "LCH", "OkLAB", "OkLCH",
-            "OkHSV", "OkHSL", "Normal"
-        };
         if ((id<0) | (id>=13))
             return "";
         else
-            return names[id];
+            return colorModelNames()[id];
     }
 
     static bool modelIdFromName(const QString& name, ColorModelId& out)
     {
-        std::array<const char*, 13> names = {
-            "GRAY", "SRGB", "HSV", "HSL",
-            "LinearRGB", "XYZ",
-            "LAB", "LCH", "OkLAB", "OkLCH",
-            "OkHSV", "OkHSL", "Normal"
-        };
+        const std::array<const QString, 13>& names = colorModelNames();
 
         for (size_t k=0; k<13; ++k)
         {

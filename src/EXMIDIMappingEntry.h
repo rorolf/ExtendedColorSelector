@@ -12,7 +12,7 @@ enum class InputBehavior {
 Q_DECLARE_METATYPE(InputBehavior); // So it can be used in Comboboxes directly
 
 
-inline QString inputBehaviorToString(InputBehavior b) {
+inline const QString inputBehaviorToString(const InputBehavior b) {
     switch (b) {
         case InputBehavior::Knob: return "Knob";
         case InputBehavior::Button: return "Button";
@@ -29,36 +29,60 @@ inline InputBehavior inputBehaviorFromString(const QString s) {
     else { return InputBehavior::Knob; }
 }
 
+inline std::array<QString, 3> InputBehaviors() {
+    return { "Knob", "Button", "Switch" };
+}
 
 enum class EXMappedMidiAction {
-    SelectPreset1=0,
-    SelectPreset2=1,
-    SelectPreset3=2,
-    SelectPreset4=3,
-    SelectPreset5=4,
-    SelectPreset6=5,
-    SelectPreset7=6,
-    SelectPreset8=7,
-    TurnKnob1=8,
-    TurnKnob2=9,
-    TurnKnob3=10,
-    TurnKnob4=11,
-    TurnKnob5=12,
-    TurnKnob6=13,
-    TurnKnob7=14,
-    TurnKnob8=15,
-    None=16
+        TurnKnob1=0,
+        TurnKnob2=1,
+        TurnKnob3=2,
+        TurnKnob4=3,
+        TurnKnob5=4,
+        TurnKnob6=5,
+        TurnKnob7=6,
+        TurnKnob8=7,
+        SelectPreset1=8,
+        SelectPreset2=9,
+        SelectPreset3=10,
+        SelectPreset4=11,
+        SelectPreset5=12,
+        SelectPreset6=13,
+        SelectPreset7=14,
+        SelectPreset8=15,
+        None=16
 };
 Q_DECLARE_METATYPE(EXMappedMidiAction);
 
+inline const std::array<const EXMappedMidiAction, 17>& AllEXMappedMidiActions() {
+    static const std::array<const EXMappedMidiAction, 17> actions = {
+        EXMappedMidiAction::TurnKnob1,     EXMappedMidiAction::TurnKnob2,
+        EXMappedMidiAction::TurnKnob3,     EXMappedMidiAction::TurnKnob4,
+        EXMappedMidiAction::TurnKnob5,     EXMappedMidiAction::TurnKnob6,
+        EXMappedMidiAction::TurnKnob7,     EXMappedMidiAction::TurnKnob8,
+        EXMappedMidiAction::SelectPreset1, EXMappedMidiAction::SelectPreset2,
+        EXMappedMidiAction::SelectPreset3, EXMappedMidiAction::SelectPreset4,
+        EXMappedMidiAction::SelectPreset5, EXMappedMidiAction::SelectPreset6,
+        EXMappedMidiAction::SelectPreset7, EXMappedMidiAction::SelectPreset8,
+        EXMappedMidiAction::None
+
+    };
+    return actions;
+}
+
+inline const std::array<const QString, 17>& EXMappedMidiActionTexts() {
+    static const std::array<const QString, 17> actions = {
+        "Turn Knob 1", "Turn Knob 2", "Turn Knob 3", "Turn Knob 4",
+        "Turn Knob 5", "Turn Knob 6", "Turn Knob 7", "Turn Knob 8",
+        "Select Preset 1", "Select Preset 2", "Select Preset 3", "Select Preset 4",
+        "Select Preset 5", "Select Preset 6", "Select Preset 7", "Select Preset 8",
+        "None"
+    };
+    return actions;
+}
+
 inline QString EXMappedMidiActionToString(EXMappedMidiAction action) {
-    std::array<QString, 17> actions = {
-            "Select Preset 1", "Select Preset 2", "Select Preset 3", "Select Preset 4",
-            "Select Preset 5", "Select Preset 6", "Select Preset 7", "Select Preset 8",
-            "Turn Knob 1", "Turn Knob 2", "Turn Knob 3", "Turn Knob 4",
-            "Turn Knob 5", "Turn Knob 6", "Turn Knob 7", "Turn Knob 8",
-            "None"
-        };
+    const std::array<const QString, 17>& actions = EXMappedMidiActionTexts();
 
     int index = (int)action;
     if (index<0 || index >16) return "Error: EXMappedMidiAction out of bounds";
