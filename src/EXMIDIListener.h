@@ -1,9 +1,12 @@
 #pragma once
 
 #include <QObject>
+
+#include <kis_shared.h>
+#include <kis_shared_ptr.h>
+
 #include "EXMIDIEvent.h"
 #include "RtMidi.h"
-#include "EXMIDIMappingEntry.h"
 
 class MidiListener : public QObject
 {
@@ -25,3 +28,5 @@ private:
     RtMidiIn* midiIn;
     static void midiCallback(double, std::vector<unsigned char>*, void* userData);
 };
+
+//typedef KisSharedPtr<MidiListener> MidiListenerSP;
