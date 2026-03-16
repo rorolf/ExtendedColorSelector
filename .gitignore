@@ -5,3 +5,5 @@ plans
 *.jl
 *.pdf
 *.log
+*.copy.*
+*.COPY.*

@@ -37,6 +37,8 @@ set(
 
 )
 
+set(CMAKE_BUILD_TYPE Debug)
+
 qt5_add_resources(extendedcolorselector_RESOURCES resources.qrc)
 
 kis_add_library(extendedcolorselector MODULE ${extendedcolorselector_SOURCES} ${extendedcolorselector_RESOURCES})
