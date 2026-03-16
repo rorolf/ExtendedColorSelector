@@ -12,15 +12,15 @@
 EXColorSelectorDock::EXColorSelectorDock()
     : QDockWidget("Extended Color Selector")
     , m_canvas(nullptr)
-    , m_colorState(EXColorState::instance())
+    , m_colorMixState(EXColorMixState::instance())
     , m_settingsState(EXSettingsState::instance())
 {
     m_canvas = nullptr;
     auto mainLayout = new QVBoxLayout();
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
-    connect(m_colorState.data(), &EXColorState::sigColorChanged, this, [this]() {
-        m_colorPatchPopup->updateColor(m_colorState->qColor());
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
+        m_colorPatchPopup->updateColor(m_colorMixState->qColor());
     });
 
     auto colorSpaceLayout = new QHBoxLayout(this);
@@ -35,7 +35,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     colorSpaceLayout->addWidget(m_useLayerColorSpaceButton);
     mainLayout->addLayout(colorSpaceLayout);
 
-    connect(m_colorState.data(), &EXColorState::sigColorSpaceChanged, this, [this](const KoColorSpace *colorSpace) {
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorSpaceChanged, this, [this](const KoColorSpace *colorSpace) {
         if (colorSpace != m_colorSpaceSelector->currentColorSpace()) {
             m_colorSpaceSelector->setCurrentColorSpace(colorSpace);
         }
@@ -44,7 +44,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     connect(m_useLayerColorSpaceButton, &QPushButton::toggled, this, [this](bool checked) {
         auto &settings = m_settingsState->globalSettings;
         settings.useLayerColorSpace = checked;
-        m_colorState->setUseLayerColorSpace(checked);
+        m_colorMixState->setUseLayerColorSpace(checked);
         m_colorSpaceSelectorButton->setEnabled(!checked);
         settings.customColorSpace = m_colorSpaceSelector->currentColorSpace();
         m_useLayerColorSpaceButton->setIcon(checked ? KisIconUtils::loadIcon("chain-icon")
@@ -58,12 +58,12 @@ EXColorSelectorDock::EXColorSelectorDock()
 
     m_plane = new EXChannelPlane(this);
     m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)m_settingsState->globalSettings.currentColorModel));
-    m_colorState->connectChannelPlane(m_plane);
+    m_colorMixState->connectChannelPlane(m_plane);
     m_settingsState->connectChannelPlane(m_plane);
     m_colorPatchPopup->connectToWidget(m_plane);
 
     m_sliders = new EXChannelSlidersGroup(QVector<ColorModelId>(), this);
-    m_colorModelSwitchers = new EXColorModelSwitchers(m_colorState, m_settingsState, this);
+    m_colorModelSwitchers = new EXColorModelSwitchers(m_colorMixState, m_settingsState, this);
 
     mainLayout->addWidget(m_plane);
     mainLayout->addWidget(m_colorModelSwitchers);
@@ -98,22 +98,22 @@ EXColorSelectorDock::EXColorSelectorDock()
     m_portableSelector = new EXPortableColorSelector();
 
     m_useLayerColorSpaceButton->setChecked(m_settingsState->globalSettings.useLayerColorSpace);
-    m_colorState->setUseLayerColorSpace(m_settingsState->globalSettings.useLayerColorSpace);
+    m_colorMixState->setUseLayerColorSpace(m_settingsState->globalSettings.useLayerColorSpace);
     if (m_settingsState->globalSettings.useLayerColorSpace) {
         m_useLayerColorSpaceButton->setIcon(KisIconUtils::loadIcon("chain-icon"));
     } else {
         m_useLayerColorSpaceButton->setIcon(KisIconUtils::loadIcon("chain-broken-icon"));
         auto customColorSpace = m_settingsState->globalSettings.customColorSpace;
         m_colorSpaceSelector->setCurrentColorSpace(customColorSpace);
-        m_colorState->setColorSpace(customColorSpace);
+        m_colorMixState->setColorSpace(customColorSpace);
     }
 
-    connect(m_colorState.data(), &EXColorState::sigColorModelChanged, m_plane, [this]() {
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, m_plane, [this]() {
         m_settingsState->applySettingsToPlane(m_plane);
     });
 
     updateSliders();
-    connect(m_colorState.data(), &EXColorState::sigColorModelChanged, this, &EXColorSelectorDock::updateSliders);
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, this, &EXColorSelectorDock::updateSliders);
     connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorSelectorDock::updateSliders);
 }
 
@@ -129,7 +129,7 @@ void EXColorSelectorDock::setCanvas(KoCanvasBase *canvas)
         m_plane->setCanvas(m_canvas);
         m_sliders->setCanvas(m_canvas);
         m_portableSelector->setCanvas(m_canvas);
-        m_colorState->setCanvas(m_canvas);
+        m_colorMixState->setCanvas(m_canvas);
         Q_EMIT m_settingsState->sigSettingsChanged();
     }
 }
@@ -139,14 +139,14 @@ void EXColorSelectorDock::unsetCanvas()
     m_canvas = nullptr;
     m_plane->setCanvas(nullptr);
     m_sliders->setCanvas(nullptr);
-    m_colorState->setCanvas(nullptr);
+    m_colorMixState->setCanvas(nullptr);
     m_portableSelector->setCanvas(nullptr);
 }
 
 void EXColorSelectorDock::enterEvent(QEvent *event)
 {
     QDockWidget::enterEvent(event);
-    m_colorPatchPopup->recordColor(m_colorState->qColor());
+    m_colorPatchPopup->recordColor(m_colorMixState->qColor());
 }
 
 void EXColorSelectorDock::leaveEvent(QEvent *event)
@@ -159,7 +159,7 @@ void EXColorSelectorDock::onColorSpaceSelected(const KoColorSpace *colorSpace)
 {
     auto &settings = m_settingsState->globalSettings;
     if (!settings.useLayerColorSpace) {
-        m_colorState->setColorSpace(colorSpace);
+        m_colorMixState->setColorSpace(colorSpace);
         settings.customColorSpace = colorSpace;
         settings.writeAll();
     }
@@ -167,10 +167,10 @@ void EXColorSelectorDock::onColorSpaceSelected(const KoColorSpace *colorSpace)
 
 void EXColorSelectorDock::updateSliders()
 {
-    auto &settings = m_settingsState->settings[m_colorState->colorModel()->id()];
+    auto &settings = m_settingsState->settings[m_colorMixState->colorModel()->id()];
     if (settings.slidersEnabled) {
         auto sliders = QVector(settings.extraSliders);
-        sliders.prepend(m_colorState->colorModel()->id());
+        sliders.prepend(m_colorMixState->colorModel()->id());
         m_sliders->resetColorModels(sliders);
     } else {
         m_sliders->resetColorModels(settings.extraSliders);
@@ -178,7 +178,7 @@ void EXColorSelectorDock::updateSliders()
 
     for (auto sliders : m_sliders->sliders()) {
         for (auto slider : sliders->sliders()) {
-            m_colorState->connectChannelSlider(slider);
+            m_colorMixState->connectChannelSlider(slider);
             m_settingsState->connectChannelSlider(slider);
             m_colorPatchPopup->connectToWidget(slider->bar());
         }

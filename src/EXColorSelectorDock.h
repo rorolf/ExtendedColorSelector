@@ -44,7 +44,7 @@ private:
     EXPortableColorSelector *m_portableSelector;
     EXColorPatchPopup *m_colorPatchPopup;
 
-    EXColorStateSP m_colorState;
+    EXColorMixStateSP m_colorMixState;
     EXSettingsStateSP m_settingsState;
 
     KisPopupButton *m_colorSpaceSelectorButton;

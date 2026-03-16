@@ -5,11 +5,11 @@
 #include "EXColorModel.h"
 #include "EXColorModelSwitchers.h"
 
-EXColorModelSwitchers::EXColorModelSwitchers(EXColorStateSP colorState,
+EXColorModelSwitchers::EXColorModelSwitchers(EXColorMixStateSP colorState,
                                              EXSettingsStateSP settingsState,
                                              QWidget *parent)
     : QWidget(parent)
-    , m_colorState(colorState)
+    , m_colorMixState(colorState)
     , m_settingsState(settingsState)
 {
     auto layout = new QHBoxLayout();
@@ -38,7 +38,7 @@ void EXColorModelSwitchers::settingsChanged()
 
     auto &globalSettings = m_settingsState->globalSettings;
     auto &settings = m_settingsState->settings;
-    auto currentModelId = m_colorState->colorModel()->id();
+    auto currentModelId = m_colorMixState->colorModel()->id();
 
     for (auto id : globalSettings.displayOrder) {
         if (!settings[id].enabled) {
@@ -52,11 +52,11 @@ void EXColorModelSwitchers::settingsChanged()
 
         connect(button, &QRadioButton::toggled, this, [this, id](bool enabled) {
             if (enabled) {
-                m_colorState->setColorModel(id);
+                m_colorMixState->setColorModel(id);
             }
         });
 
-        connect(m_colorState.data(), &EXColorState::sigColorModelChanged, button, [button, id](ColorModelId newId) {
+        connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, button, [button, id](ColorModelId newId) {
             button->setChecked(newId == id);
         });
     }

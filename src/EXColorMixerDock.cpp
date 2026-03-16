@@ -18,10 +18,13 @@
 #include <QButtonGroup>
 #include <QRadioButton>
 
+#include "EXActionbus.h"
 #include "EXColorMixState.h"
 #include "EXColorPresetStore.h"
 #include "EXColorModel.h"
 #include "EXColorPatchWidget.h"
+#include "EXSettings.h"
+#include "EXSettingsState.h"
 #include "kis_shared_ptr.h"
 #include "EXColorMixerDock.h"
 
@@ -35,24 +38,26 @@ EXColorMixerDock::EXColorMixerDock()
     , m_selectedColorPatchWidget(-1)
     , m_colorPatchWidgets({})
     , m_mixingModeSelector(nullptr)
-    , m_colorMixState(EXColorMixState::instance())
     , m_colorModelSwitchers(nullptr)
-    , m_globalSettings(nullptr)
-    , m_settings(nullptr)
     , m_portableSelector(nullptr)
     , m_colorPatchPopup(nullptr)
-    , m_colorState(EXColorState::instance())
-    , m_colorPresets(EXColorPresetStore::instance())
-    , m_settingsState(EXSettingsState::instance())
-    //, m_colorSpaceSelectorButton(nullptr)
+    , m_globalSettings(nullptr)
+    , m_settings(nullptr)
+    //, m_colorMixState(EXColorMixState::instance())
+    // , m_colorState(EXColorState::instance())
+    // , m_colorPresets(EXColorPresetStore::instance())
+    // , m_settingsState(EXSettingsState::instance())
+    , m_actionBus(nullptr)
+    // , m_colorSpaceSelectorButton(nullptr)
     // , m_useLayerColorSpaceButton(nullptr)
 {
+
     auto mainLayout = new QVBoxLayout();
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
-    connect(m_colorState.data(), &EXColorState::sigColorChanged, this, [this]() {
-        m_colorPatchPopup->updateColor(m_colorState->qColor());
-    });
+    // connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
+    //     m_colorPatchPopup->updateColor(m_colorState->qColor());
+    // });
 
     auto presetSpaceLayout = new QHBoxLayout(this);
     m_presetSelector = new QComboBox(this);
@@ -73,35 +78,35 @@ EXColorMixerDock::EXColorMixerDock()
         QString modelName = EXColorModel::modelNameFromId(clrid);
         m_colorSpaceSelector->addItem(modelName, QVariant(static_cast<int>(clrid)));
     }
-    connect(
-        m_colorSpaceSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        this, [this](int newIndex) {
-            auto data = m_colorSpaceSelector->itemData(newIndex);
-            if (data.isValid())
-            {
-                ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
-                m_colorMixState->setColorModel(newClrId);
-            }
-        }
-    );
+    // connect(
+    //     m_colorSpaceSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    //     this, [this](int newIndex) {
+    //         auto data = m_colorSpaceSelector->itemData(newIndex);
+    //         if (data.isValid())
+    //         {
+    //             ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
+    //             m_colorMixState->setColorModel(newClrId);
+    //         }
+    //     }
+    // );
 
-    connect(m_colorState.data(), &EXColorState::sigColorSpaceChanged, this, [this](const KoColorSpace *colorSpace) {
-
-        auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
-        ColorModelId newClrId = newColorModel->id();
-        delete newColorModel;
-        ColorModelId oldClrId = static_cast<ColorModelId>(m_colorSpaceSelector->currentData().value<int>());
-        if (newClrId != oldClrId) {
-            int newIndex = m_colorSpaceSelector->findData(newClrId);
-            if (newIndex >= 0)
-            {
-                m_colorSpaceSelector->blockSignals(true);
-                m_colorSpaceSelector->setCurrentIndex(newIndex);
-                m_colorSpaceSelector->blockSignals(false);
-            }
-        }
-        //m_colorSpaceSelectorButton->setText(colorSpace->name());
-    });
+    // connect(m_colorState.data(), &EXColorState::sigColorSpaceChanged, this, [this](const KoColorSpace *colorSpace) {
+    //
+    //     auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
+    //     ColorModelId newClrId = newColorModel->id();
+    //     delete newColorModel;
+    //     ColorModelId oldClrId = static_cast<ColorModelId>(m_colorSpaceSelector->currentData().value<int>());
+    //     if (newClrId != oldClrId) {
+    //         int newIndex = m_colorSpaceSelector->findData(newClrId);
+    //         if (newIndex >= 0)
+    //         {
+    //             m_colorSpaceSelector->blockSignals(true);
+    //             m_colorSpaceSelector->setCurrentIndex(newIndex);
+    //             m_colorSpaceSelector->blockSignals(false);
+    //         }
+    //     }
+    //     //m_colorSpaceSelectorButton->setText(colorSpace->name());
+    // });
 
     //m_colorSpaceSelectorButton->setPopupWidget(m_colorSpaceSelector);
     //m_colorSpaceSelectorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -138,9 +143,9 @@ EXColorMixerDock::EXColorMixerDock()
         }
         else
         {
-            connect(m_colorMixState.data(), &EXColorMixState::sigKritaBaseColorChanged,
+            connect(EXColorMixState::instance(), &EXColorMixState::sigKritaBaseColorChanged,
                 this, [this, newChannelWidget](QVector3D newClr) {
-                    newChannelWidget->m_color = m_colorMixState->toQColor(newClr);
+                    newChannelWidget->m_color = EXColorMixState::instance()->toQColor(newClr);
                 }
             );
         }
@@ -157,32 +162,40 @@ EXColorMixerDock::EXColorMixerDock()
     mixFromColorsButton->setWhatsThis("Color Palette");
     mixFromColorsButton->setChecked(true);
 
-    connect(mixFromColorsButton, &QRadioButton::clicked,
-        this, [this]() {
-            size_t activePresetN = m_colorPresets->m_activePreset;
-            auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
-            activePreset->m_mixFromGradients = false;
-        }
-    );
+    // connect(mixFromColorsButton, &QRadioButton::clicked,
+    //     this, [this]() {
+    //         EXActionBus* actionBus = this->m_actionBus.data();
+    //         if (actionBus) {
+    //             size_t activePresetN = actionBus->m_colorPresets->m_activePreset;
+    //             auto activePreset = &actionBus->m_colorPresets->m_colorMixPresets[activePresetN];
+    //             activePreset->m_mixFromGradients = false;
+    //         }
+    //     }
+    // );
+
+    connect(mixFromColorsButton, &QRadioButton::clicked, this, &EXColorMixerDock::sigMixFromColorsButtonPressed);
 
     QRadioButton *mixFromGradientsButton = new QRadioButton(this);
-    // mixFromGradientButton->setWhatsThis("Gradient Palette");
-    connect(mixFromGradientsButton, &QRadioButton::clicked,
-        this, [this]() {
-            size_t activePresetN = m_colorPresets->m_activePreset;
-            auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
-            activePreset->m_mixFromGradients = true;
-        }
-    );
+    mixFromGradientsButton->setWhatsThis("Gradient Palette");
+    mixFromColorsButton->setChecked(false);
+    // connect(mixFromGradientsButton, &QRadioButton::clicked,
+    //     this, [this]() {
+    //         size_t activePresetN = m_colorPresets->m_activePreset;
+    //         auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
+    //         activePreset->m_mixFromGradients = true;
+    //     }
+    // );
+
+    connect(mixFromGradientsButton, &QRadioButton::clicked, this, &EXColorMixerDock::sigMixFromGradientsButtonPressed);
 
     mixerModeButtonGroup->addButton(mixFromColorsButton, 0);
     mixerModeButtonGroup->addButton(mixFromGradientsButton, 1);
 
     auto mixResultColorPatch = new EXColorPatchWidget();
 
-    connect(m_colorMixState, &EXColorMixState::sigColorChanged,
-        this, [this, &mixResultColorPatch](QVector3D newClrV) {
-            auto newClr = m_colorMixState->toQColor(newClrV);
+    connect(EXColorMixState::instance(), &EXColorMixState::sigColorChanged,
+        this, [this, mixResultColorPatch](QVector3D newClrV) {
+            auto newClr = EXColorMixState::instance()->toQColor(newClrV);
             mixResultColorPatch->onColorSelected(newClr);
         }
     );
@@ -224,28 +237,28 @@ EXColorMixerDock::EXColorMixerDock()
     //                                                 : KisIconUtils::loadIcon("chain-broken-icon"));
     //     settings.writeAll();
     // });
-    // connect(m_colorSpaceSelector,
-    //         SIGNAL(colorSpaceChanged(const KoColorSpace *)),
-    //         this,
-    //         SLOT(onColorSpaceSelected(const KoColorSpace *))
-    // );
+    connect(m_colorSpaceSelector,
+            SIGNAL(colorSpaceChanged(const KoColorSpace *)),
+            this,
+            SLOT(onColorSpaceSelected(const KoColorSpace *))
+    );
 
     m_plane = new EXChannelPlane(this);
-    m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)m_settingsState->globalSettings.currentColorModel));
-    m_colorState->connectChannelPlane(m_plane);
-    m_settingsState->connectChannelPlane(m_plane);
+    m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)EXSettingsState::instance()->globalSettings.currentColorModel));
+    // m_colorState->connectChannelPlane(m_plane);
+    // m_settingsState->connectChannelPlane(m_plane);
     m_colorPatchPopup->connectToWidget(m_plane);
 
     m_sliders = new EXChannelSlidersGroup(QVector<ColorModelId>(), this);
-    m_colorModelSwitchers = new EXColorModelSwitchers(m_colorState, m_settingsState, this);
+    m_colorModelSwitchers = new EXColorModelSwitchers(EXColorMixState::instance(), EXSettingsState::instance(), this);
 
     mainLayout->addWidget(m_plane);
     mainLayout->addWidget(m_colorModelSwitchers);
     mainLayout->addWidget(m_sliders);
     mainLayout->addStretch(1);
 
-    m_settings = new EXPerColorModelSettingsDialog(m_settingsState, this);
-    m_globalSettings = new EXGlobalSettingsDialog(m_settingsState, this);
+    m_settings = new EXPerColorModelSettingsDialog(EXSettingsState::instance(), this);
+    m_globalSettings = new EXGlobalSettingsDialog(EXSettingsState::instance(), this);
 
     auto settingsButtonLayout = new QHBoxLayout(this);
     auto settingsButton = new QPushButton();
@@ -282,13 +295,17 @@ EXColorMixerDock::EXColorMixerDock()
     //     m_colorState->setColorSpace(customColorSpace);
     // }
 
-    connect(m_colorState.data(), &EXColorState::sigColorModelChanged, m_plane, [this]() {
-        m_settingsState->applySettingsToPlane(m_plane);
-    });
+    // connect(m_colorState.data(), &EXColorState::sigColorModelChanged, m_plane, [this]() {
+    //     EXSettingsState::instance()->applySettingsToPlane(m_plane);
+    // });
 
     updateSliders();
-    connect(m_colorState.data(), &EXColorState::sigColorModelChanged, this, &EXColorMixerDock::updateSliders);
-    connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorMixerDock::updateSliders);
+    // connect(m_colorState.data(), &EXColorState::sigColorModelChanged, this, &EXColorMixerDock::updateSliders);
+    // connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorMixerDock::updateSliders);
+
+
+    m_actionBus = new EXActionBus(nullptr);
+    m_actionBus->initializeAndConnectTo(this);
 }
 
 void EXColorMixerDock::setViewManager(KisViewManager *kisview)
@@ -303,8 +320,9 @@ void EXColorMixerDock::setCanvas(KoCanvasBase *canvas)
         m_plane->setCanvas(m_canvas);
         m_sliders->setCanvas(m_canvas);
         m_portableSelector->setCanvas(m_canvas);
-        m_colorState->setCanvas(m_canvas);
-        Q_EMIT m_settingsState->sigSettingsChanged();
+        EXColorMixState::instance()->setCanvas(m_canvas);
+        // TODO: erase code smell; apply distribution of responsibility
+        Q_EMIT EXSettingsState::instance()->sigSettingsChanged();
     }
 }
 
@@ -313,14 +331,14 @@ void EXColorMixerDock::unsetCanvas()
     m_canvas = nullptr;
     m_plane->setCanvas(nullptr);
     m_sliders->setCanvas(nullptr);
-    m_colorState->setCanvas(nullptr);
+    EXColorMixState::instance()->setCanvas(nullptr);
     m_portableSelector->setCanvas(nullptr);
 }
 
 void EXColorMixerDock::enterEvent(QEvent *event)
 {
     QDockWidget::enterEvent(event);
-    m_colorPatchPopup->recordColor(m_colorState->qColor());
+    m_colorPatchPopup->recordColor(EXColorMixState::instance()->qColor());
 }
 
 void EXColorMixerDock::leaveEvent(QEvent *event)
@@ -331,9 +349,9 @@ void EXColorMixerDock::leaveEvent(QEvent *event)
 
 void EXColorMixerDock::onColorSpaceSelected(const KoColorSpace *colorSpace)
 {
-    auto &settings = m_settingsState->globalSettings;
+    auto &settings = EXSettingsState::instance()->globalSettings;
     if (!settings.useLayerColorSpace) {
-        m_colorState->setColorSpace(colorSpace);
+        EXColorMixState::instance()->setColorSpace(colorSpace);
         settings.customColorSpace = colorSpace;
         settings.writeAll();
     }
@@ -341,10 +359,12 @@ void EXColorMixerDock::onColorSpaceSelected(const KoColorSpace *colorSpace)
 
 void EXColorMixerDock::updateSliders()
 {
-    auto &settings = m_settingsState->settings[m_colorState->colorModel()->id()];
+    EXColorMixState* clrMixState = EXColorMixState::instance();
+    EXSettingsState* settingsState = EXSettingsState::instance();
+    EXPerColorModelSettings &settings = settingsState->settings[clrMixState->colorModel()->id()];
     if (settings.slidersEnabled) {
         auto sliders = QVector(settings.extraSliders);
-        sliders.prepend(m_colorState->colorModel()->id());
+        sliders.prepend(clrMixState->colorModel()->id());
         m_sliders->resetColorModels(sliders);
     } else {
         m_sliders->resetColorModels(settings.extraSliders);
@@ -352,8 +372,8 @@ void EXColorMixerDock::updateSliders()
 
     for (auto sliders : m_sliders->sliders()) {
         for (auto slider : sliders->sliders()) {
-            m_colorState->connectChannelSlider(slider);
-            m_settingsState->connectChannelSlider(slider);
+            clrMixState->connectChannelSlider(slider);
+            settingsState->connectChannelSlider(slider);
             m_colorPatchPopup->connectToWidget(slider->bar());
         }
     }

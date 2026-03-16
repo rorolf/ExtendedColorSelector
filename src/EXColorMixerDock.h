@@ -56,7 +56,6 @@ public:
     void enterEvent(QEvent *event) override;
     void leaveEvent(QEvent *event) override;
 
-private:
     KisCanvas2 *m_canvas;
     EXChannelPlane *m_plane;
     EXChannelSlidersGroup *m_sliders;
@@ -70,18 +69,21 @@ private:
 
     QButtonGroup *m_mixingModeSelector;
 
-    EXColorMixStateSP m_colorMixState;
 
     EXColorModelSwitchers *m_colorModelSwitchers;
-    EXGlobalSettingsDialog *m_globalSettings;
-    EXPerColorModelSettingsDialog *m_settings;
     EXPortableColorSelector *m_portableSelector;
     EXColorPatchPopup *m_colorPatchPopup;
+    EXGlobalSettingsDialog *m_globalSettings;
+    EXPerColorModelSettingsDialog *m_settings;
 
-    EXColorStateSP m_colorState;
-    EXColorPresetStoreSP m_colorPresets;
-    EXSettingsStateSP m_settingsState;
+    EXMIDIPanelWidget* m_midiPanel;
 
+    // EXColorMixStateSP m_colorMixState;
+    // EXColorStateSP m_colorState;
+    // EXColorPresetStoreSP m_colorPresets;
+    // EXSettingsStateSP m_settingsState;
+
+    KisSharedPtr<EXActionBus> m_actionBus;
 
     //KisPopupButton *m_colorSpaceSelectorButton;
     //KisColorSpaceSelector *m_colorSpaceSelector;
@@ -94,10 +96,14 @@ Q_SIGNALS:
     void sigColorMixChannelSelected(const int colorMixChannel);
     void sigColorMixChannelModeSelected(const bool isGradient);
 
+    void sigMixFromColorsButtonPressed();
+    void sigMixFromGradientsButtonPressed();
+
 public Q_SLOTS:
     void onColorSpaceSelected(const KoColorSpace *colorSpace);
 
 };
+typedef KisSharedPtr<EXColorMixerDock> EXColorMixerDockSP;
 
 #endif // EXTENDEDCOLORMIXERDOCK_H
 

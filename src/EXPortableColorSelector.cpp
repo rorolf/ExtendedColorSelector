@@ -8,7 +8,7 @@
 EXPortableColorSelector::EXPortableColorSelector(QWidget *parent)
     : QDialog(parent)
     , m_toggleAction(nullptr)
-    , m_colorState(EXColorState::instance())
+    , m_colorMixState(EXColorMixState::instance())
     , m_settingsState(EXSettingsState::instance())
 {
     setWindowFlag(Qt::WindowType::FramelessWindowHint, true);
@@ -17,14 +17,14 @@ EXPortableColorSelector::EXPortableColorSelector(QWidget *parent)
     m_colorPatchPopup = new EXColorPatchPopup(this);
     m_plane = new EXChannelPlane(this);
     m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)m_settingsState->globalSettings.currentColorModel));
-    m_colorState->connectChannelPlane(m_plane);
+    m_colorMixState->connectChannelPlane(m_plane);
     m_settingsState->connectChannelPlane(m_plane);
     m_colorPatchPopup->connectToWidget(m_plane);
-    connect(m_colorState.data(), &EXColorState::sigColorChanged, this, [this]() {
-        m_colorPatchPopup->updateColor(m_colorState->qColor());
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
+        m_colorPatchPopup->updateColor(m_colorMixState->qColor());
     });
 
-    m_colorModelSwitchers = new EXColorModelSwitchers(m_colorState, m_settingsState, this);
+    m_colorModelSwitchers = new EXColorModelSwitchers(m_colorMixState, m_settingsState, this);
     m_sliders = new EXChannelSlidersGroup(QVector<ColorModelId>(), this);
     mainLayout->addWidget(m_plane);
     mainLayout->addWidget(m_colorModelSwitchers);
@@ -33,8 +33,8 @@ EXPortableColorSelector::EXPortableColorSelector(QWidget *parent)
     setLayout(mainLayout);
 
     connect(m_settingsState, &EXSettingsState::sigSettingsChanged, this, &EXPortableColorSelector::settingsChanged);
-    connect(m_colorState.data(), &EXColorState::sigColorModelChanged, this, &EXPortableColorSelector::updateSliders);
-    connect(m_colorState.data(), &EXColorState::sigColorModelChanged, m_plane, [this]() {
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, this, &EXPortableColorSelector::updateSliders);
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, m_plane, [this]() {
         m_settingsState->applySettingsToPlane(m_plane);
     });
 }
@@ -80,7 +80,7 @@ void EXPortableColorSelector::toggle()
     if (isVisible()) {
         hide();
     } else {
-        m_colorPatchPopup->recordColor(m_colorState->qColor());
+        m_colorPatchPopup->recordColor(m_colorMixState->qColor());
         move(QCursor::pos() - QPoint(width() / 2, height() / 2));
         activateWindow();
         show();
@@ -111,10 +111,10 @@ void EXPortableColorSelector::keyPressEvent(QKeyEvent *event)
 
 void EXPortableColorSelector::updateSliders()
 {
-    auto &settings = m_settingsState->settings[m_colorState->colorModel()->id()];
+    auto &settings = m_settingsState->settings[m_colorMixState->colorModel()->id()];
     if (settings.slidersEnabled) {
         auto sliders = QVector(settings.extraSliders);
-        sliders.prepend(m_colorState->colorModel()->id());
+        sliders.prepend(m_colorMixState->colorModel()->id());
         m_sliders->resetColorModels(sliders);
     } else {
         m_sliders->resetColorModels(settings.extraSliders);
@@ -122,7 +122,7 @@ void EXPortableColorSelector::updateSliders()
 
     for (auto sliders : m_sliders->sliders()) {
         for (auto slider : sliders->sliders()) {
-            m_colorState->connectChannelSlider(slider);
+            m_colorMixState->connectChannelSlider(slider);
             m_settingsState->connectChannelSlider(slider);
             m_colorPatchPopup->connectToWidget(slider->bar());
         }

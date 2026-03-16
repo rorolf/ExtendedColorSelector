@@ -1,0 +1,210 @@
+
+
+
+
+
+#include "EXActionbus.h"
+#include "EXColorMixState.h"
+#include "EXColorMixerDock.h"
+#include "EXMIDIEvent.h"
+#include "EXMIDIMapper_PresetControl.h"
+
+
+
+
+EXActionBus::EXActionBus(EXColorMixerDock* ui, QObject*parent)
+    : QObject(parent)
+    , m_ui(ui)
+    //, m_midiUi(ui->m_midiPanel)
+    , m_midiListener(new MidiListener())
+    , m_mapper(new EXMIDIMapperPresetControl)
+    , m_mixer(EXColorMixState::instance())
+    , m_colorPresets(new EXColorPresetStore)
+    , m_settingsState(new EXSettingsState)
+{
+
+    //################################################################################
+    //## Gathering dependencies (Q_Objects)
+    //################################################################################
+
+    //TODO: always capture this isntead?
+    EXColorMixerDock* uiCapture = m_ui;
+    EXColorMixStateSP mixerCapture = m_mixer;
+    auto cSS = uiCapture->m_colorSpaceSelector;
+    LogPanelWidget* logPanelCapture = m_ui->m_midiPanel->logPanel;
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture]() {
+        uiCapture->m_colorPatchPopup->updateColor(mixerCapture->qColor());
+    });
+
+    connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        uiCapture, [this, uiCapture, cSS](int newIndex) {
+            auto data = cSS->itemData(newIndex);
+            if (data.isValid())
+            {
+                ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
+                this->m_mixer->setColorModel(newClrId);
+            }
+        }
+    );
+
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [uiCapture, cSS](const KoColorSpace *colorSpace) {
+
+        auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
+        ColorModelId newClrId = newColorModel->id();
+        delete newColorModel;
+        ColorModelId oldClrId = static_cast<ColorModelId>(uiCapture->m_colorSpaceSelector->currentData().value<int>());
+        if (newClrId != oldClrId) {
+            int newIndex = cSS->findData(newClrId);
+            if (newIndex >= 0)
+            {
+                cSS->blockSignals(true);
+                cSS->setCurrentIndex(newIndex);
+                cSS->blockSignals(false);
+            }
+        }
+        //m_colorSpaceSelectorButton->setText(colorSpace->name());
+    });
+
+    //TODO: send only to UI directly, UI decides how and where to send the messages
+    connect(this, &EXActionBus::sigInputPortsChanged, m_ui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
+
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_ui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
+    connect(m_midiListener, &MidiListener::sigErrorOccurred, m_ui->m_midiPanel, &EXMIDIPanelWidget::onError);
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
+        logPanelCapture->onMidiMessage(evt);
+    });
+
+    connect(this, &EXActionBus::sigLogMessage, logPanelCapture, [logPanelCapture](const QString& message) {
+        logPanelCapture->appendLine(message);
+    });
+
+    //TODO: maybe add signal/slot for setting connection status
+    connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::portSelected, this, [this](const QString& portName) {
+        int idx = currentPorts.indexOf(portName);
+        if (idx != -1) {
+            m_midiListener->openPort(idx);
+            currentPortName = portName;
+            // m_ui->m_midiPanel->logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
+            emit sigLogMessage(QString("[Connected to port %1]").arg(portName));
+            this->m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
+        } else {
+            this->m_ui->m_midiPanel->mappingTable->setConnectionStatus(false);
+        }
+    });
+
+
+    connect(m_ui, &EXColorMixerDock::sigMixFromColorsButtonPressed,
+        this, [this]() {
+            size_t activePresetN = m_colorPresets->m_activePreset;
+            auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
+            activePreset->m_mixFromGradients = false;
+        }
+    );
+
+    connect(m_ui, &EXColorMixerDock::sigMixFromGradientsButtonPressed,
+        this, [this]() {
+            size_t activePresetN = m_colorPresets->m_activePreset;
+            auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
+            activePreset->m_mixFromGradients = true;
+        }
+    );
+
+    m_mixer->connectChannelPlane(m_ui->m_plane);
+    m_settingsState->connectChannelPlane(m_ui->m_plane);
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, m_ui->m_plane, [this]() {
+        EXSettingsState::instance()->applySettingsToPlane(this->m_ui->m_plane);
+    });
+
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, this, [this]() {
+        this->m_ui->updateSliders();
+    });
+    connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, [this]() {
+        this->m_ui->updateSliders();
+    });
+
+
+    //################################################################################
+    //##  Initialization of variables
+    //################################################################################
+
+    currentPorts = m_midiListener->availableInputPorts();
+    // Try to connect to first available port
+    if (!currentPorts.isEmpty()) {
+        m_midiListener->openPort(0);
+        emit sigInputPortsChanged(currentPorts);
+    }
+
+
+    portRefreshTimer = new QTimer(this);
+    connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
+    portRefreshTimer->start(2000);
+}
+
+void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {}
+
+void EXActionBus::onRefreshMidiPorts() {
+    QStringList newPorts = m_midiListener->availableInputPorts();
+
+    if (newPorts != currentPorts) {
+        currentPorts = newPorts;
+        m_ui->m_midiPanel->mappingTable->setAvailablePorts(currentPorts);  // e.g. update dropdown
+    }
+
+    const QString portName = m_ui->m_midiPanel->mappingTable->desiredPort();
+
+    if (!portName.isEmpty()) {
+        int index = currentPorts.indexOf(portName);
+        if (index != -1) {
+            if (portName != currentPortName) {
+                m_midiListener->openPort(index);
+                currentPortName = portName;
+                m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
+                //logPanel->appendLine(QString("[Auto-connected to %1]").arg(portName));
+                emit sigLogMessage(QString("[Auto-connected to port %1]").arg(portName));
+            }
+        } else {
+            emit sigLogMessage(QString("[Failed to connect to port %1: Not found]").arg(portName));
+        }
+    } else {
+        if (!currentPortName.isEmpty()) {
+            m_midiListener->closePort();
+            currentPortName.clear();
+        }
+        m_ui->m_midiPanel->mappingTable->setConnectionStatus(false);
+    }
+}
+
+void EXActionBus::onPortSelected(const QString& portName)
+{
+    int index = currentPorts.indexOf(portName);
+    if (index != -1) {
+        m_midiListener->openPort(index);
+        currentPortName = portName;
+        //logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
+        emit sigLogMessage(QString("[Connected to port %1]").arg(portName));
+        m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
+    } else {
+        emit sigLogMessage(QString("[Failed to connect to port %1: Not found]").arg(portName));
+    }
+}
+
+void EXActionBus::onMidiMessage(const MidiEvent& evt)
+{
+    auto [inputType, value] = m_mapper->mapMidiEvent(evt);
+    if (std::signbit(value)==0) {
+        switch (inputType) {
+            case InputBehavior::Knob: break;
+            case InputBehavior::Button: break;
+            case InputBehavior::Switch: break;
+        }
+    }
+}
+
+
+
+
+
