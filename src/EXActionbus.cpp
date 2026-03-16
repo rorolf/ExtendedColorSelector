@@ -8,13 +8,22 @@
 #include "EXColorMixerDock.h"
 #include "EXMIDIEvent.h"
 #include "EXMIDIMapper_PresetControl.h"
+#include <qglobal.h>
 
 
+static EXActionBus *s_instance = nullptr;
 
+EXActionBusSP EXActionBus::instance()
+{
+    if (!s_instance) {
+        s_instance = new EXActionBus();
+    }
+    return s_instance;
+}
 
-EXActionBus::EXActionBus(EXColorMixerDock* ui, QObject*parent)
+EXActionBus::EXActionBus(QObject*parent)
     : QObject(parent)
-    , m_ui(ui)
+    , m_ui(nullptr)
     //, m_midiUi(ui->m_midiPanel)
     , m_midiListener(new MidiListener())
     , m_mapper(new EXMIDIMapperPresetControl)
@@ -23,6 +32,10 @@ EXActionBus::EXActionBus(EXColorMixerDock* ui, QObject*parent)
     , m_settingsState(new EXSettingsState)
 {
 
+
+}
+
+void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     //################################################################################
     //## Gathering dependencies (Q_Objects)
     //################################################################################
@@ -39,6 +52,7 @@ EXActionBus::EXActionBus(EXColorMixerDock* ui, QObject*parent)
 
     connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
         uiCapture, [this, uiCapture, cSS](int newIndex) {
+            Q_UNUSED(uiCapture);
             auto data = cSS->itemData(newIndex);
             if (data.isValid())
             {
@@ -143,8 +157,6 @@ EXActionBus::EXActionBus(EXColorMixerDock* ui, QObject*parent)
     connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
     portRefreshTimer->start(2000);
 }
-
-void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {}
 
 void EXActionBus::onRefreshMidiPorts() {
     QStringList newPorts = m_midiListener->availableInputPorts();

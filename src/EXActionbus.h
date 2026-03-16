@@ -21,9 +21,10 @@ class EXActionBus : public QObject, public KisShared
     Q_OBJECT
 
     public:
-        EXActionBus(EXColorMixerDock* ui, QObject* parent = nullptr);
+        EXActionBus(QObject* parent = nullptr);
         ~EXActionBus() {};
         void initializeAndConnectTo(EXColorMixerDock* ui);
+        static EXActionBusSP instance();
 
         EXColorMixerDock* m_ui;
         //EXMIDIPanelWidgetSP m_midiUi;

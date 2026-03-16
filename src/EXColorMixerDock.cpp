@@ -304,7 +304,7 @@ EXColorMixerDock::EXColorMixerDock()
     // connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorMixerDock::updateSliders);
 
 
-    m_actionBus = new EXActionBus(nullptr);
+    m_actionBus =  EXActionBus::instance(); //new EXActionBus(nullptr);
     m_actionBus->initializeAndConnectTo(this);
 }
 
