@@ -3,7 +3,8 @@
 #include <klocalizedstring.h>
 #include <kpluginfactory.h>
 
-#include "EXColorSelectorDock.h"
+//#include "EXColorSelectorDock.h"
+#include "EXColorMixerDock.h"
 #include "EXColorSelectorPlugin.h"
 
 K_PLUGIN_FACTORY_WITH_JSON(EXColorSelectorPluginFactory,
@@ -24,7 +25,8 @@ public:
 
     QDockWidget *createDockWidget() override
     {
-        EXColorSelectorDock *dockWidget = new EXColorSelectorDock();
+        //EXColorSelectorDock *dockWidget = new EXColorSelectorDock();
+        EXColorMixerDock *dockWidget = new EXColorMixerDock();
         dockWidget->setObjectName(id());
 
         return dockWidget;
