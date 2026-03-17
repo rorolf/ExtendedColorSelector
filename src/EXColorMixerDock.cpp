@@ -216,7 +216,7 @@ EXColorMixerDock::EXColorMixerDock()
     mixPresetLayout->addLayout(mixChannelLayout);
     mixPresetLayout->addLayout(mixSideLayout);
 
-    mainLayout->addLayout(mixChannelLayout);
+    mainLayout->addLayout(mixPresetLayout);
 
 
     // m_colorSpaceSelectorButton = new KisPopupButton(this);
