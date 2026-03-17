@@ -3,6 +3,7 @@
 
 #include <array>
 
+#include <QMetaType>
 #include <QVector3D>
 
 #include <KoColorModelStandardIds.h>
@@ -11,6 +12,7 @@
 #include <kis_shared.h>
 #include <kis_shared_ptr.h>
 #include <qchar.h>
+
 
 typedef KisSharedPtr<class EXColorModel> ColorModelSP;
 
@@ -29,6 +31,7 @@ enum ColorModelId {
     Okhsl = 11,
     Normal = 12,
 };
+Q_DECLARE_METATYPE(ColorModelId);
 
 class EXColorModel : public KisShared
 {

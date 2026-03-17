@@ -76,7 +76,7 @@ EXColorMixerDock::EXColorMixerDock()
                         ColorModelId::Lab, ColorModelId::Lch, ColorModelId::Oklab, ColorModelId::Oklch})
     {
         QString modelName = EXColorModel::modelNameFromId(clrid);
-        m_colorSpaceSelector->addItem(modelName, QVariant(static_cast<int>(clrid)));
+        m_colorSpaceSelector->addItem(modelName, QVariant(clrid));
     }
     // connect(
     //     m_colorSpaceSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
