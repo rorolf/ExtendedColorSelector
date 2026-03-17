@@ -133,15 +133,19 @@ EXColorMixerDock::EXColorMixerDock()
         {
             connect(newChannelWidget, &EXColorPatchWidget::sigClicked,
                 this, [this, k]() {
-                    if (this->m_selectedColorPatchWidget != k)
-                    {
+                    int curSelect = this->m_selectedColorPatchWidget;
+                    if (curSelect<0) {
+                        // app is free to focus on an object
                         this->m_selectedColorPatchWidget = k;
                         this->m_colorPatchWidgets[k]->m_selected = true;
-                    }
-                    else
-                    {
+                        this->m_colorPatchWidgets[k]->update();
+                    } else if (curSelect != k) {
+                        // app already has a focus; do nothing
+                    } else {
+                        // release focus from object
                         this->m_selectedColorPatchWidget = -1;
                         this->m_colorPatchWidgets[k]->m_selected = false;
+                        this->m_colorPatchWidgets[k]->update();
                     }
                 }
             );

@@ -53,6 +53,7 @@ void EXColorPatchWidget::mousePressEvent(QMouseEvent *event)
 void EXColorPatchWidget::onColorSelected(QColor& color)
 {
     m_color = color;
+    this->update();
 }
 
 
