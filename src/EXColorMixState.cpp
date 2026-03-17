@@ -179,29 +179,30 @@ void EXColorMixState::setPrimaryChannelIndex(quint32 index)
 
 void EXColorMixState::setSecondaryChannelValues(const QVector2D &values)
 {
+    QVector3D newClr = m_color; // creates a copy on write
     switch (m_colorModel->channelCount()) {
     case 2:
-        m_color = values.toVector3D();
+        newClr = values.toVector3D();
         break;
     case 3:
         switch (m_primaryChannelIndex) {
         case 0:
-            m_color[1] = values.x();
-            m_color[2] = values.y();
+            newClr[1] = values.x();
+            newClr[2] = values.y();
             break;
         case 1:
-            m_color[0] = values.x();
-            m_color[2] = values.y();
+            newClr[0] = values.x();
+            newClr[2] = values.y();
             break;
         case 2:
-            m_color[0] = values.x();
-            m_color[1] = values.y();
+            newClr[0] = values.x();
+            newClr[1] = values.y();
             break;
         }
         break;
     }
 
-    setColor(m_color);
+    setColor(newClr);
 }
 
 QVector3D EXColorMixState::color() const
