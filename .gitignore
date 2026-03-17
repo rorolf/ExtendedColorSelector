@@ -7,3 +7,5 @@ plans
 *.log
 *.copy.*
 *.COPY.*
+*.kate-swp
+*/dev/null
