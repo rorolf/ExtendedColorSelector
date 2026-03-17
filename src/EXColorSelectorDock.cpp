@@ -15,13 +15,143 @@ EXColorSelectorDock::EXColorSelectorDock()
     , m_colorMixState(EXColorMixState::instance())
     , m_settingsState(EXSettingsState::instance())
 {
+    this->setObjectName("EXColorMixerDock");
     m_canvas = nullptr;
+
     auto mainLayout = new QVBoxLayout();
+    mainLayout->setObjectName("MainLayout");
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
     connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
         m_colorPatchPopup->updateColor(m_colorMixState->qColor());
     });
+
+    //################################################################################
+    //## new code
+    //################################################################################
+
+    auto presetSpaceLayout = new QHBoxLayout();
+    m_presetSelector = new QComboBox(this);
+    m_presetSelector->setEditable(false);
+    for (int k=0; k<8;++k)
+    {
+        m_presetSelector->addItem("Preset " + QString::number(k+1), QVariant::fromValue(k));
+    }
+
+    auto colorSpaceSelectorLabel = new QLabel("ColorSpace:");
+
+    m_colorSpaceSelector2 = new QComboBox(this);
+    m_colorSpaceSelector2->setEditable(false);
+
+    for (auto clrid : { ColorModelId::LinearRgb, ColorModelId::Srgb,
+                        ColorModelId::Xyz,
+                        ColorModelId::Lab, ColorModelId::Lch, ColorModelId::Oklab, ColorModelId::Oklch})
+    {
+        QString modelName = EXColorModel::modelNameFromId(clrid);
+        m_colorSpaceSelector2->addItem(modelName, QVariant(clrid));
+    }
+
+    presetSpaceLayout->addWidget(m_presetSelector);
+    presetSpaceLayout->addWidget(colorSpaceSelectorLabel);
+    presetSpaceLayout->addWidget(m_colorSpaceSelector2);
+    mainLayout->addLayout(presetSpaceLayout);
+
+    // ###########################################################
+
+    auto mixPresetLayout = new QHBoxLayout();
+    mixPresetLayout->setObjectName("mixPresetLayout");
+    auto mixChannelLayout = new QGridLayout();
+    mixChannelLayout->setObjectName("mixChannelLayout");
+    auto mixSideLayout = new QVBoxLayout();
+    mixSideLayout->setObjectName("mixSideLayout");
+
+    for (int k = 0; k<9; ++k)
+    {
+        auto newChannelWidget = new EXColorPatchWidget();
+        m_colorPatchWidgets[k] = newChannelWidget;
+
+        if (k!=4)
+        {
+            connect(newChannelWidget, &EXColorPatchWidget::sigClicked,
+                this, [this, k]() {
+                    int curSelect = this->m_selectedColorPatchWidget;
+                    if (curSelect<0) {
+                        // app is free to focus on an object
+                        this->m_selectedColorPatchWidget = k;
+                        this->m_colorPatchWidgets[k]->m_selected = true;
+                        this->m_colorPatchWidgets[k]->update();
+                    } else if (curSelect != k) {
+                        // app already has a focus; do nothing
+                    } else {
+                        // release focus from object
+                        this->m_selectedColorPatchWidget = -1;
+                        this->m_colorPatchWidgets[k]->m_selected = false;
+                        this->m_colorPatchWidgets[k]->update();
+                    }
+                }
+            );
+        }
+        else
+        {
+            connect(EXColorMixState::instance(), &EXColorMixState::sigKritaBaseColorChanged,
+                this, [this, k](QVector3D newClr) {
+                    Q_UNUSED(this);
+                    QColor newQClr = EXColorMixState::instance()->toQColor(newClr);
+                    this->m_colorPatchWidgets[k]->m_color = newQClr;
+                    this->m_colorPatchWidgets[k]->update();
+                    // newChannelWidget->onColorSelected(newQClr);
+                }
+            );
+        }
+
+        int x = k%3;
+        int y = k/3;
+        mixChannelLayout->addWidget(newChannelWidget, x, y);
+    }
+
+    QButtonGroup *mixerModeButtonGroup = new QButtonGroup(this);
+    m_mixingModeSelector = mixerModeButtonGroup;
+
+    QRadioButton *mixFromColorsButton = new QRadioButton(this);
+    mixFromColorsButton->setText("Color Palette");
+    mixFromColorsButton->setChecked(true);
+
+    // connect(mixFromColorsButton, &QRadioButton::clicked, this, &EXColorMixerDock::sigMixFromColorsButtonPressed);
+
+    QRadioButton *mixFromGradientsButton = new QRadioButton(this);
+    mixFromGradientsButton->setText("Gradient Palette");
+    mixFromColorsButton->setChecked(false);
+
+    // connect(mixFromGradientsButton, &QRadioButton::clicked, this, &EXColorMixerDock::sigMixFromGradientsButtonPressed);
+
+    mixerModeButtonGroup->addButton(mixFromColorsButton, 0);
+    mixerModeButtonGroup->addButton(mixFromGradientsButton, 1);
+
+    m_mixResultColorPatch = new EXColorPatchWidget();
+
+    connect(EXColorMixState::instance(), &EXColorMixState::sigColorChanged,
+        this, [this](QVector3D newClrV) {
+            Q_UNUSED(this);
+            auto newClr = EXColorMixState::instance()->toQColor(newClrV);
+            this->m_mixResultColorPatch->m_color = newClr;
+            this->m_mixResultColorPatch->update();
+        }
+    );
+
+    mixSideLayout->addWidget(mixFromColorsButton);
+    mixSideLayout->addWidget(mixFromGradientsButton);
+    mixSideLayout->addWidget(m_mixResultColorPatch);
+
+    mixPresetLayout->addLayout(mixChannelLayout);
+    mixPresetLayout->addLayout(mixSideLayout);
+
+    mainLayout->addLayout(mixPresetLayout);
+
+
+    //################################################################################
+    //## original code
+    //################################################################################
+
 
     auto colorSpaceLayout = new QHBoxLayout(this);
     m_colorSpaceSelectorButton = new KisPopupButton(this);
