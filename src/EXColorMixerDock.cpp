@@ -246,11 +246,11 @@ EXColorMixerDock::EXColorMixerDock()
     //                                                 : KisIconUtils::loadIcon("chain-broken-icon"));
     //     settings.writeAll();
     // });
-    connect(m_colorSpaceSelector,
-            SIGNAL(colorSpaceChanged(const KoColorSpace *)),
-            this,
-            SLOT(onColorSpaceSelected(const KoColorSpace *))
-    );
+    // connect(m_colorSpaceSelector,
+    //         SIGNAL(colorSpaceChanged(const KoColorSpace *)),
+    //         this,
+    //         SLOT(onColorSpaceSelected(const KoColorSpace *))
+    // );
 
     m_plane = new EXChannelPlane(this);
     m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)EXSettingsState::instance()->globalSettings.currentColorModel));
