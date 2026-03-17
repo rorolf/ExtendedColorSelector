@@ -5,10 +5,12 @@
 #include <kis_canvas_resource_provider.h>
 #include <kis_display_color_converter.h>
 #include <kis_icon_utils.h>
+#include <qtabwidget.h>
 
 #include "EXColorModel.h"
 #include "EXColorSelectorDock.h"
 #include "EXActionbus.h"
+#include "EXMIDIPanelWidget.h"
 
 EXColorSelectorDock::EXColorSelectorDock()
     : QDockWidget("Extended Color Selector")
@@ -19,8 +21,8 @@ EXColorSelectorDock::EXColorSelectorDock()
     this->setObjectName("EXColorMixerDock");
     m_canvas = nullptr;
 
-    auto mainLayout = new QVBoxLayout();
-    mainLayout->setObjectName("MainLayout");
+    auto colorSelectLayout = new QVBoxLayout();
+    colorSelectLayout->setObjectName("MainLayout");
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
     // connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
@@ -55,7 +57,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     presetSpaceLayout->addWidget(m_presetSelector);
     presetSpaceLayout->addWidget(colorSpaceSelectorLabel);
     presetSpaceLayout->addWidget(m_colorSpaceSelector2);
-    mainLayout->addLayout(presetSpaceLayout);
+    colorSelectLayout->addLayout(presetSpaceLayout);
 
     // ###########################################################
 
@@ -146,7 +148,19 @@ EXColorSelectorDock::EXColorSelectorDock()
     mixPresetLayout->addLayout(mixChannelLayout);
     mixPresetLayout->addLayout(mixSideLayout);
 
-    mainLayout->addLayout(mixPresetLayout);
+    colorSelectLayout->addLayout(mixPresetLayout);
+
+    m_midiPanel = new EXMIDIPanelWidget();
+    QVBoxLayout* midiLayout = new QVBoxLayout();
+    midiLayout->addWidget(m_midiPanel->centralWidget());
+
+    m_tabWidget = new QTabWidget();
+
+
+
+
+
+
 
 
     //################################################################################
@@ -164,7 +178,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     m_colorSpaceSelectorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     colorSpaceLayout->addWidget(m_colorSpaceSelectorButton);
     colorSpaceLayout->addWidget(m_useLayerColorSpaceButton);
-    mainLayout->addLayout(colorSpaceLayout);
+    colorSelectLayout->addLayout(colorSpaceLayout);
 
     connect(m_colorMixState.data(), &EXColorMixState::sigColorSpaceChanged, this, [this](const KoColorSpace *colorSpace) {
         if (colorSpace != m_colorSpaceSelector->currentColorSpace()) {
@@ -196,10 +210,10 @@ EXColorSelectorDock::EXColorSelectorDock()
     m_sliders = new EXChannelSlidersGroup(QVector<ColorModelId>(), this);
     m_colorModelSwitchers = new EXColorModelSwitchers(m_colorMixState, m_settingsState, this);
 
-    mainLayout->addWidget(m_plane);
-    mainLayout->addWidget(m_colorModelSwitchers);
-    mainLayout->addWidget(m_sliders);
-    mainLayout->addStretch(1);
+    colorSelectLayout->addWidget(m_plane);
+    colorSelectLayout->addWidget(m_colorModelSwitchers);
+    colorSelectLayout->addWidget(m_sliders);
+    colorSelectLayout->addStretch(1);
 
     m_settings = new EXPerColorModelSettingsDialog(m_settingsState, this);
     m_globalSettings = new EXGlobalSettingsDialog(m_settingsState, this);
@@ -220,11 +234,19 @@ EXColorSelectorDock::EXColorSelectorDock()
     settingsButtonLayout->addWidget(settingsButton);
     settingsButtonLayout->addStretch(1);
     settingsButtonLayout->addWidget(globalSettingsButton);
-    mainLayout->addLayout(settingsButtonLayout);
+    colorSelectLayout->addLayout(settingsButtonLayout);
 
-    auto mainWidget = new QWidget(this);
-    mainWidget->setLayout(mainLayout);
-    setWidget(mainWidget);
+    auto colorSelectWidget = new QWidget(this);
+    colorSelectWidget->setLayout(colorSelectLayout);
+
+    //################################################################################
+    //## Added TabWidget logic
+    //################################################################################
+
+    m_tabWidget->addTab(colorSelectWidget, "ColorSelector");
+    m_tabWidget->addTab(m_midiPanel, "Midi");
+
+    setWidget(m_tabWidget);
 
     m_portableSelector = new EXPortableColorSelector();
 

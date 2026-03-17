@@ -22,7 +22,9 @@
 
 
 #include <QComboBox>
+#include <QTabWidget>
 #include "EXColorPatchWidget.h"
+#include "EXMIDIPanelWidget.h"
 
 
 
@@ -80,6 +82,8 @@ private:
     std::array<EXColorPatchWidget*, 9> m_colorPatchWidgets;
     QButtonGroup *m_mixingModeSelector;
     EXColorPatchWidget *m_mixResultColorPatch;
+    EXMIDIPanelWidget* m_midiPanel;
+    QTabWidget* m_tabWidget;
 
     EXActionBus* m_actionBus;
 

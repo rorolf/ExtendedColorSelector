@@ -58,6 +58,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         }
     );
 
+    //TODO: Change ColorModel when ColorSpace changes
     connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [uiCapture, cSS](const KoColorSpace *colorSpace) {
 
         auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
@@ -75,6 +76,14 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         }
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
+
+    // connect(this, &EXActionBus::sigInputPortsChanged, m_ui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
+    //
+    // connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_ui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
+    // connect(m_midiListener, &MidiListener::sigErrorOccurred, m_ui->m_midiPanel, &EXMIDIPanelWidget::onError);
+    // connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
+    //     logPanelCapture->onMidiMessage(evt);
+    // });
 
 }
 
