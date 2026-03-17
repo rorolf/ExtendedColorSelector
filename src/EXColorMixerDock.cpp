@@ -51,15 +51,17 @@ EXColorMixerDock::EXColorMixerDock()
     // , m_colorSpaceSelectorButton(nullptr)
     // , m_useLayerColorSpaceButton(nullptr)
 {
+    this->setObjectName("EXColorMixerDock");
 
     auto mainLayout = new QVBoxLayout();
+    mainLayout->setObjectName("MainLayout");
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
     // connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
     //     m_colorPatchPopup->updateColor(m_colorState->qColor());
     // });
 
-    auto presetSpaceLayout = new QHBoxLayout(this);
+    auto presetSpaceLayout = new QHBoxLayout();
     m_presetSelector = new QComboBox(this);
     for (int k=0; k<8;++k)
     {
@@ -115,9 +117,12 @@ EXColorMixerDock::EXColorMixerDock()
     presetSpaceLayout->addWidget(m_colorSpaceSelector);
     mainLayout->addLayout(presetSpaceLayout);
 
-    auto mixPresetLayout = new QHBoxLayout(this);
-    auto mixChannelLayout = new QGridLayout(this);
-    auto mixSideLayout = new QVBoxLayout(this);
+    auto mixPresetLayout = new QHBoxLayout();
+    mixPresetLayout->setObjectName("mixPresetLayout");
+    auto mixChannelLayout = new QGridLayout();
+    mixChannelLayout->setObjectName("mixChannelLayout");
+    auto mixSideLayout = new QVBoxLayout();
+    mixSideLayout->setObjectName("mixSideLayout");
 
     for (int k = 0; k<9; ++k)
     {
@@ -260,7 +265,7 @@ EXColorMixerDock::EXColorMixerDock()
     m_settings = new EXPerColorModelSettingsDialog(EXSettingsState::instance(), this);
     m_globalSettings = new EXGlobalSettingsDialog(EXSettingsState::instance(), this);
 
-    auto settingsButtonLayout = new QHBoxLayout(this);
+    auto settingsButtonLayout = new QHBoxLayout();
     auto settingsButton = new QPushButton();
     settingsButton->setIcon(KisIconUtils::loadIcon(("configure")));
     settingsButton->setFlat(true);
@@ -304,8 +309,8 @@ EXColorMixerDock::EXColorMixerDock()
     // connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorMixerDock::updateSliders);
 
 
-    m_actionBus =  EXActionBus::instance(); //new EXActionBus(nullptr);
-    m_actionBus->initializeAndConnectTo(this);
+    // m_actionBus =  EXActionBus::instance(); //new EXActionBus(nullptr);
+    // m_actionBus->initializeAndConnectTo(this);
 }
 
 void EXColorMixerDock::setViewManager(KisViewManager *kisview)
