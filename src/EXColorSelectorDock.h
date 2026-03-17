@@ -24,6 +24,20 @@
 #include <QComboBox>
 #include "EXColorPatchWidget.h"
 
+
+
+//################################################################################
+//## Forward Declarations
+//################################################################################
+
+// #include "EXActionbus.h"
+class EXActionBus;
+
+
+//################################################################################
+//## Header subject
+//################################################################################
+
 class EXColorSelectorDock : public QDockWidget, public KisMainwindowObserver
 {
     Q_OBJECT
@@ -39,6 +53,8 @@ public:
     void leaveEvent(QEvent *event) override;
 
 private:
+    friend class EXActionBus;
+
     KisCanvas2 *m_canvas;
     EXChannelPlane *m_plane;
     EXChannelSlidersGroup *m_sliders;
@@ -48,14 +64,6 @@ private:
     EXPortableColorSelector *m_portableSelector;
     EXColorPatchPopup *m_colorPatchPopup;
 
-    QComboBox *m_presetSelector;
-    QComboBox *m_colorSpaceSelector2;
-    int m_selectedColorPatchWidget=-1;
-    std::array<EXColorPatchWidget*, 8> m_colorPatchWidgets;
-    QButtonGroup *m_mixingModeSelector;
-    EXColorPatchWidget *m_mixResultColorPatch;
-
-
     EXColorMixStateSP m_colorMixState;
     EXSettingsStateSP m_settingsState;
 
@@ -64,6 +72,20 @@ private:
     QPushButton *m_useLayerColorSpaceButton;
 
     void updateSliders();
+
+
+    QComboBox *m_presetSelector;
+    QComboBox *m_colorSpaceSelector2;
+    int m_selectedColorPatchWidget=-1;
+    std::array<EXColorPatchWidget*, 9> m_colorPatchWidgets;
+    QButtonGroup *m_mixingModeSelector;
+    EXColorPatchWidget *m_mixResultColorPatch;
+
+    EXActionBus* m_actionBus;
+
+Q_SIGNALS:
+    void sigMixFromColorsButtonPressed();
+    void sigMixFromGradientsButtonPressed();
 
 public Q_SLOTS:
     void onColorSpaceSelected(const KoColorSpace *colorSpace);

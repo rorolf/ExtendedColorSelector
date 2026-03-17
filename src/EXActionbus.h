@@ -9,6 +9,7 @@
 
 
 #include "EXColorMixerDock.h"
+#include "EXColorSelectorDock.h"
 #include "EXMIDIEvent.h"
 #include "EXMIDIMapper_PresetControl.h"
 //#include "EXMIDIPanelWidget.h"
@@ -24,9 +25,11 @@ class EXActionBus : public QObject, public KisShared
         EXActionBus(QObject* parent = nullptr);
         ~EXActionBus() {};
         void initializeAndConnectTo(EXColorMixerDock* ui);
-        static EXActionBusSP instance();
+        void initializeAndConnectToEXS(EXColorSelectorDock* ui);
+        static EXActionBus* instance();
 
         EXColorMixerDock* m_ui;
+        EXColorSelectorDock* m_tmpui;
         //EXMIDIPanelWidgetSP m_midiUi;
         MidiListener* m_midiListener;
         EXMIDIMapperPresetControl* m_mapper;
@@ -54,4 +57,4 @@ class EXActionBus : public QObject, public KisShared
 
 };
 
-typedef KisSharedPtr<EXActionBus> EXActionBusSP;
+

@@ -37,6 +37,7 @@ EXColorMixerDock::EXColorMixerDock()
     , m_colorSpaceSelector(nullptr)
     , m_selectedColorPatchWidget(-1)
     , m_colorPatchWidgets({})
+    , m_mixResultColorPatch(nullptr)
     , m_mixingModeSelector(nullptr)
     , m_colorModelSwitchers(nullptr)
     , m_portableSelector(nullptr)
@@ -153,8 +154,10 @@ EXColorMixerDock::EXColorMixerDock()
         else
         {
             connect(EXColorMixState::instance(), &EXColorMixState::sigKritaBaseColorChanged,
-                this, [this, newChannelWidget](QVector3D newClr) {
-                    newChannelWidget->m_color = EXColorMixState::instance()->toQColor(newClr);
+                this, [this, k](QVector3D newClr) {
+                    Q_UNUSED(this);
+                    this->m_colorPatchWidgets[k]->m_color = EXColorMixState::instance()->toQColor(newClr);
+                    this->m_colorPatchWidgets[k]->update();
                 }
             );
         }
@@ -200,18 +203,18 @@ EXColorMixerDock::EXColorMixerDock()
     mixerModeButtonGroup->addButton(mixFromColorsButton, 0);
     mixerModeButtonGroup->addButton(mixFromGradientsButton, 1);
 
-    auto mixResultColorPatch = new EXColorPatchWidget();
+    m_mixResultColorPatch = new EXColorPatchWidget();
 
     connect(EXColorMixState::instance(), &EXColorMixState::sigColorChanged,
-        this, [this, mixResultColorPatch](QVector3D newClrV) {
+        this, [this](QVector3D newClrV) {
             auto newClr = EXColorMixState::instance()->toQColor(newClrV);
-            mixResultColorPatch->onColorSelected(newClr);
+            this->m_mixResultColorPatch->onColorSelected(newClr);
         }
     );
 
     mixSideLayout->addWidget(mixFromColorsButton);
     mixSideLayout->addWidget(mixFromGradientsButton);
-    mixSideLayout->addWidget(mixResultColorPatch);
+    mixSideLayout->addWidget(m_mixResultColorPatch);
 
     mixPresetLayout->addLayout(mixChannelLayout);
     mixPresetLayout->addLayout(mixSideLayout);

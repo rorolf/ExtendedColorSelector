@@ -8,6 +8,7 @@
 
 #include "EXColorModel.h"
 #include "EXColorSelectorDock.h"
+#include "EXActionbus.h"
 
 EXColorSelectorDock::EXColorSelectorDock()
     : QDockWidget("Extended Color Selector")
@@ -22,9 +23,9 @@ EXColorSelectorDock::EXColorSelectorDock()
     mainLayout->setObjectName("MainLayout");
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
-    connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
-        m_colorPatchPopup->updateColor(m_colorMixState->qColor());
-    });
+    // connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
+    //     m_colorPatchPopup->updateColor(m_colorMixState->qColor());
+    // });
 
     //################################################################################
     //## new code
@@ -116,13 +117,13 @@ EXColorSelectorDock::EXColorSelectorDock()
     mixFromColorsButton->setText("Color Palette");
     mixFromColorsButton->setChecked(true);
 
-    // connect(mixFromColorsButton, &QRadioButton::clicked, this, &EXColorMixerDock::sigMixFromColorsButtonPressed);
+    connect(mixFromColorsButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromColorsButtonPressed);
 
     QRadioButton *mixFromGradientsButton = new QRadioButton(this);
     mixFromGradientsButton->setText("Gradient Palette");
     mixFromColorsButton->setChecked(false);
 
-    // connect(mixFromGradientsButton, &QRadioButton::clicked, this, &EXColorMixerDock::sigMixFromGradientsButtonPressed);
+    connect(mixFromGradientsButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromGradientsButtonPressed);
 
     mixerModeButtonGroup->addButton(mixFromColorsButton, 0);
     mixerModeButtonGroup->addButton(mixFromGradientsButton, 1);
@@ -245,6 +246,14 @@ EXColorSelectorDock::EXColorSelectorDock()
     updateSliders();
     connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, this, &EXColorSelectorDock::updateSliders);
     connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorSelectorDock::updateSliders);
+
+
+    //################################################################################
+    //## EXActionBus
+    //################################################################################
+
+    m_actionBus = EXActionBus::instance();
+    m_actionBus->initializeAndConnectToEXS(this);
 }
 
 void EXColorSelectorDock::setViewManager(KisViewManager *kisview)

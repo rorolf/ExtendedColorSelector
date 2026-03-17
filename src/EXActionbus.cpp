@@ -13,7 +13,7 @@
 
 static EXActionBus *s_instance = nullptr;
 
-EXActionBusSP EXActionBus::instance()
+EXActionBus* EXActionBus::instance()
 {
     if (!s_instance) {
         s_instance = new EXActionBus();
@@ -24,14 +24,57 @@ EXActionBusSP EXActionBus::instance()
 EXActionBus::EXActionBus(QObject*parent)
     : QObject(parent)
     , m_ui(nullptr)
+    , m_tmpui(nullptr)
     //, m_midiUi(ui->m_midiPanel)
     , m_midiListener(new MidiListener())
     , m_mapper(new EXMIDIMapperPresetControl)
     , m_mixer(EXColorMixState::instance())
     , m_colorPresets(new EXColorPresetStore)
-    , m_settingsState(new EXSettingsState)
-{
+    , m_settingsState(EXSettingsState::instance())
+{}
 
+void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
+    m_tmpui = ui;
+
+    EXColorSelectorDock* uiCapture = m_tmpui;
+    EXColorMixStateSP mixerCapture = m_mixer;
+    QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
+    LogPanelWidget* logPanelCapture = m_ui->m_midiPanel->logPanel;
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture](QVector3D newClr) {
+        QColor newQClr = mixerCapture->toQColor(newClr);
+        uiCapture->m_colorPatchPopup->updateColor(newQClr);
+    });
+
+    connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        uiCapture, [this, uiCapture, cSS](int newIndex) {
+            Q_UNUSED(uiCapture);
+            auto data = cSS->itemData(newIndex);
+            if (data.isValid())
+            {
+                ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
+                this->m_mixer->setColorModel(newClrId);
+            }
+        }
+    );
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [uiCapture, cSS](const KoColorSpace *colorSpace) {
+
+        auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
+        ColorModelId newClrId = newColorModel->id();
+        delete newColorModel;
+        ColorModelId oldClrId = uiCapture->m_colorSpaceSelector2->currentData().value<ColorModelId>();
+        if (newClrId != oldClrId) {
+            int newIndex = cSS->findData(newClrId);
+            if (newIndex >= 0)
+            {
+                cSS->blockSignals(true);
+                cSS->setCurrentIndex(newIndex);
+                cSS->blockSignals(false);
+            }
+        }
+        //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
+    });
 
 }
 
@@ -41,6 +84,8 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     //################################################################################
 
     //TODO: always capture this isntead?
+    m_ui = ui;
+
     EXColorMixerDock* uiCapture = m_ui;
     EXColorMixStateSP mixerCapture = m_mixer;
     auto cSS = uiCapture->m_colorSpaceSelector;

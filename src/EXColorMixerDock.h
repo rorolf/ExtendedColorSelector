@@ -65,7 +65,8 @@ public:
 
     //EXColorMixChannelSelector *m_colorMixChannelSelector;
     int m_selectedColorPatchWidget=-1;
-    std::array<EXColorPatchWidget*, 8> m_colorPatchWidgets;
+    std::array<EXColorPatchWidget*, 9> m_colorPatchWidgets;
+    EXColorPatchWidget *m_mixResultColorPatch;
 
     QButtonGroup *m_mixingModeSelector;
 
