@@ -34,13 +34,14 @@ public:
     explicit MappingTableWidget(QWidget* parent = nullptr);
 
 
-    // new behavior
-    void overwriteWithMappings(const QList<MappingEntry>& entries);
     void addRowsFromSettings(QSettings& settings);
     QVector<MappingEntry> collectMappingsFromTable() const;
     void saveMappingsToSettings(QSettings& settings) const;
+    void overwriteWithMappings(const QList<MappingEntry>& entries);
+    void overwriteWithMappings(const QList<std::tuple<int, MappingEntry>>& entries);
 
     void addMappingRow(const MappingEntry& entry);
+    bool overwriteMappingRow(int rowIndex, const MappingEntry& entry);
     void emptySelectedRows();
     void emptyRow(QModelIndex idx);
     void emptyRow(int row);

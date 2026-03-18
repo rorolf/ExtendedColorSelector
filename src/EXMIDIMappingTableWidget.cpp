@@ -74,29 +74,41 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 }
 
 void MappingTableWidget::overwriteWithMappings(const QList<MappingEntry>& entries) {
-    table->setRowCount(0);
+    int k = 0;
     for (const MappingEntry& entry : entries) {
-        this->addMappingRow(entry);
+        this->overwriteMappingRow(k++, entry);
     }
+}
+
+void MappingTableWidget::overwriteWithMappings(const QList<std::tuple<int, MappingEntry>>& entries) {
+    for (auto[index, entry] : entries) {
+        this->overwriteMappingRow(index, entry);
+    }
+}
+
+bool MappingTableWidget::overwriteMappingRow(int rowIndex, const MappingEntry& entry) {
+    if (table->rowCount() > rowIndex+1) return false;
+
+    table->setCellWidget(rowIndex, ActionColumn,     mappedActionComboBox(entry.mappedAction));
+    table->setCellWidget(rowIndex, EventTypeColumn,  eventTypeComboBox(entry.eventType));
+    table->setCellWidget(rowIndex, CodeColumn,       midiEventCodeSpinBox(entry.eventCode));
+    table->setCellWidget(rowIndex, BehaviorColumn,   inputBehaviorComboBox(entry.inputBehavior));
+    table->setCellWidget(rowIndex, ThresholdColumn,  thresholdSpinBox(entry.threshold, entry.inputBehavior));
+    table->setCellWidget(rowIndex, HysteresisColumn, hysteresisSpinBox(entry.hysteresis, entry.inputBehavior));
+
+    auto* deleteButton = new QPushButton("Delete");
+    connect(deleteButton, &QPushButton::clicked, this, [this, rowIndex]() {
+        this->emptyRow(rowIndex);
+    });
+    table->setCellWidget(rowIndex, DeleteColumn, deleteButton);
+    return true;
 }
 
 void MappingTableWidget::addMappingRow(const MappingEntry& entry = MappingEntry::EmptyMappingEntry())
 {
     int row = table->rowCount();
     table->insertRow(row);
-
-    table->setCellWidget(row, ActionColumn,     mappedActionComboBox(entry.mappedAction));
-    table->setCellWidget(row, EventTypeColumn,  eventTypeComboBox(entry.eventType));
-    table->setCellWidget(row, CodeColumn,       midiEventCodeSpinBox(entry.eventCode));
-    table->setCellWidget(row, BehaviorColumn,   inputBehaviorComboBox(entry.inputBehavior));
-    table->setCellWidget(row, ThresholdColumn,  thresholdSpinBox(entry.threshold, entry.inputBehavior));
-    table->setCellWidget(row, HysteresisColumn, hysteresisSpinBox(entry.hysteresis, entry.inputBehavior));
-
-    auto* deleteButton = new QPushButton("Delete");
-    connect(deleteButton, &QPushButton::clicked, this, [this, row]() {
-        this->emptyRow(row);
-    });
-    table->setCellWidget(row, DeleteColumn, deleteButton);
+    this->overwriteMappingRow(row, entry);
 }
 
 void MappingTableWidget::addRowsFromSettings(QSettings& settings)

@@ -83,9 +83,10 @@ void EXMIDIPanelWidget::loadSettings()
     mappingTable->addRowsFromSettings(settings);
 
 
+    QList<std::tuple<int, MappingEntry>>* loadedMappings = new QList<std::tuple<int, MappingEntry>>();
     int mappingCount = settings.beginReadArray("mappings");
-    for (int i = 0; i < mappingCount; ++i) {
-        settings.setArrayIndex(i);
+    for (int k = 0; k < mappingCount; ++k) {
+        settings.setArrayIndex(k);
         MappingEntry entry;
         entry.eventType = midiEventTypeFromString(settings.value("eventType").toString());
         entry.eventCode = settings.value("code").toInt();
@@ -93,10 +94,11 @@ void EXMIDIPanelWidget::loadSettings()
         entry.threshold = settings.value("threshold").toInt();
         entry.mappedAction = EXMappedMidiActionFromString(settings.value("mappedAction").toString());
         mappings.append(entry);
+        loadedMappings->append({k, entry});
     }
     settings.endArray();
 
-    mappingTable->overwriteWithMappings(mappings);
+    mappingTable->overwriteWithMappings(*loadedMappings);
 }
 
 void EXMIDIPanelWidget::saveSettings()
