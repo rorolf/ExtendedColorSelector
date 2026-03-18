@@ -242,7 +242,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     //################################################################################
 
     m_tabWidget->addTab(colorSelectWidget, "ColorSelector");
-    m_tabWidget->addTab(m_midiPanel, "Midi");
+    m_tabWidget->addTab(m_midiPanel->centralWidget(), "Midi");
 
     setWidget(m_tabWidget);
 
