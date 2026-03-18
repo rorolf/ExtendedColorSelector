@@ -33,10 +33,8 @@ public Q_SLOTS:
     void onPortSelected(const QString& portName);
     void onMidiMessage(const MidiEvent& evt);
     void onError(const QString& message);
-    void onAddMappingClicked();
     void toggleLogVisibility(bool checked);
     void onLogCheckboxToggled(bool checked);
-    void onMappingsEdited(const QVector<MappingEntry>& now);
 
 public:
     void loadSettings();

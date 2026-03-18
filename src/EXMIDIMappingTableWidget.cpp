@@ -30,7 +30,7 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 
     connect(portCombo, &QComboBox::currentTextChanged, this, [this](const QString& name) {
         desiredPortName = name;
-        emit portSelected(name);
+        emit sigPortSelected(name);
     });
 
 
@@ -59,15 +59,10 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 
     layout->addWidget(table);
 
-    // Bottom row with buttons
     QHBoxLayout* bottomRow = new QHBoxLayout();
 
-    // addMappingButton = new QPushButton("Add Mapping", this);
-    // connect(addMappingButton, &QPushButton::clicked, this, &MappingTableWidget::addEmptyMappingRow);
-    // bottomRow->addWidget(addMappingButton);
-
     showLogCheckbox = new QCheckBox("Show MIDI Log", this);
-    connect(showLogCheckbox, &QCheckBox::toggled, this, &MappingTableWidget::showLogToggled);
+    connect(showLogCheckbox, &QCheckBox::toggled, this, &MappingTableWidget::sigShowLogToggled);
     bottomRow->addWidget(showLogCheckbox);
 
 
@@ -189,7 +184,7 @@ void MappingTableWidget::onAnyWidgetChanged()
         if (hysteresisSpinbox) hysteresisSpinbox->setEnabled(hystOn);
     }
 
-    emit mappingsEdited(collectMappingsFromTable());
+    emit sigMappingsEdited(collectMappingsFromTable());
 }
 
 

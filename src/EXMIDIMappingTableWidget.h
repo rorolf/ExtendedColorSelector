@@ -45,11 +45,6 @@ public:
     void emptyRow(QModelIndex idx);
     void emptyRow(int row);
 
-
-    // to be deprecated
-    //void addMappingRow(const MappingEntry& entry);
-
-    // to be left unchanged
     void setPortList(const QStringList& ports);
     QString currentPortName() const;
     void setCurrentPortIndex(int index);
@@ -69,11 +64,10 @@ public:
 
 
 Q_SIGNALS:
-    //void addMappingRequested();
-    void showLogToggled(bool enabled);
-    void portSelected(const QString& name);
+    void sigShowLogToggled(bool enabled);
+    void sigPortSelected(const QString& name);
     void sigMappingChanged(int row);
-    void mappingsEdited(const QVector<MappingEntry>&);
+    void sigMappingsEdited(const QVector<MappingEntry>&);
 
 private:
     QTableWidget* table;

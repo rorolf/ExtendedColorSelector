@@ -69,7 +69,7 @@ EXMIDIPanelWidget::~EXMIDIPanelWidget() {
 
 void EXMIDIPanelWidget::loadSettings()
 {
-    QSettings settings("MyCompany", "MidiGuiListener");
+    QSettings settings("KritaExtension", "MidiGuiListener");
 
     pendingReconnectPortName = settings.value("selectedPort").toString();
 
@@ -82,6 +82,7 @@ void EXMIDIPanelWidget::loadSettings()
 
     mappingTable->addRowsFromSettings(settings);
 
+
     int mappingCount = settings.beginReadArray("mappings");
     for (int i = 0; i < mappingCount; ++i) {
         settings.setArrayIndex(i);
@@ -92,14 +93,15 @@ void EXMIDIPanelWidget::loadSettings()
         entry.threshold = settings.value("threshold").toInt();
         entry.mappedAction = EXMappedMidiActionFromString(settings.value("mappedAction").toString());
         mappings.append(entry);
-        mappingTable->addMappingRow(entry);
     }
     settings.endArray();
+
+    mappingTable->overwriteWithMappings(mappings);
 }
 
 void EXMIDIPanelWidget::saveSettings()
 {
-    QSettings settings("MyCompany", "MidiGuiListener");
+    QSettings settings("KritaExtension", "MidiGuiListener");
 
     settings.setValue("selectedPort", mappingTable->desiredPort());
 
@@ -115,27 +117,6 @@ void EXMIDIPanelWidget::saveSettings()
     settings.endArray();
 }
 
-
-void EXMIDIPanelWidget::onMappingsEdited(const QVector<MappingEntry>& now)
-{
-    saveSettings();
-}
-
-
-
-void EXMIDIPanelWidget::onAddMappingClicked()
-{
-    // Mock input: in real app, use dialog
-    MappingEntry entry;
-    entry.eventType = MidiEventType::ControlChange;
-    entry.eventCode = 76;
-    entry.threshold = 64;
-    entry.inputBehavior = InputBehavior::Switch;
-    entry.mappedAction = EXMappedMidiAction::None;
-
-    mappings.append(entry);
-    mappingTable->addMappingRow(entry);
-}
 
 void EXMIDIPanelWidget::toggleLogVisibility(bool checked)
 {

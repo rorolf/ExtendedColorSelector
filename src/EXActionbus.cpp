@@ -149,7 +149,7 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     });
 
     //TODO: maybe add signal/slot for setting connection status
-    connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::portSelected, this, [this](const QString& portName) {
+    connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& portName) {
         int idx = currentPorts.indexOf(portName);
         if (idx != -1) {
             m_midiListener->openPort(idx);
