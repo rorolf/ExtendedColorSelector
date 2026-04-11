@@ -9,3 +9,5 @@ plans
 *.COPY.*
 *.kate-swp
 */dev/null
+
+src/libremidi
