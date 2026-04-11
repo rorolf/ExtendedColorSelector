@@ -1,6 +1,7 @@
 
 #include <QSettings>
 #include "EXMIDIPanelWidget.h"
+#include "EXActionbus.h"
 #include "EXMIDIMapper_PresetControl.h"
 #include "EXMIDIMappingEntry.h"
 #include "EXMIDIEvent.h"
@@ -13,37 +14,46 @@
 #include <cmath>
 
 EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
-    : QMainWindow(parent)
+    : QWidget(parent)
 {
     //################################################################################
     //## code that stays here
     //################################################################################
 
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+
     mappingTable = new MappingTableWidget(this);
-    setCentralWidget(mappingTable);
-    resize(500, 400);
+    //setCentralWidget(mappingTable);
+    //resize(500, 400);
+    this->setMinimumSize(500, 400);
+    this->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     setWindowTitle("Qt6 MIDI Listener");
+
+    mainLayout->addWidget(mappingTable);
 
     // // Connect signals from the mapping widget
     // connect(mappingTable, &MappingTableWidget::portSelected, this, &EXMIDIPanelWidget::onPortSelected);
     // //connect(mappingTable, &MappingTableWidget::addMappingRequested, this, &EXMIDIPanelWidget::onAddMappingClicked);
     // connect(mappingTable, &MappingTableWidget::showLogToggled, this, &EXMIDIPanelWidget::onLogCheckboxToggled);
     // connect(mappingTable, &MappingTableWidget::mappingsEdited, this, &EXMIDIPanelWidget::onMappingsEdited);
+
+
+
+    logPanel = new LogPanelWidget();
+
+    // logDock = new QDockWidget("MIDI Log");
+    //logDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    // logDock->setTitleBarWidget(new QWidget());
+    // logDock->setAllowedAreas(Qt::RightDockWidgetArea);
+    // logDock->setMinimumWidth(logDock->parentWidget()->minimumWidth());
+    // logDock->setMaximumWidth(logDock->parentWidget()->maximumWidth());
+    // logDock->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+    // logDock->setWidget(logPanel);
+    // addDockWidget(Qt::RightDockWidgetArea, logDock);
+    mainLayout->addWidget(logPanel);
+    // logDock->hide();
     //
-
-
-    logPanel = new LogPanelWidget(this);
-
-    logDock = new QDockWidget("MIDI Log", this);
-    logDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    logDock->setTitleBarWidget(new QWidget());
-    logDock->setAllowedAreas(Qt::RightDockWidgetArea);
-    logDock->setMinimumWidth(200);
-    logDock->setMaximumWidth(300);
-    logDock->setWidget(logPanel);
-    addDockWidget(Qt::RightDockWidgetArea, logDock);
-    logDock->hide();
-
+    currentPorts = EXActionBus::instance()->m_midiListener->availableInputPorts();
     mappingTable->setAvailablePorts(currentPorts);
     currentPortName = mappingTable->currentPortName();
 

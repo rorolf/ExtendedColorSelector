@@ -20,7 +20,7 @@
 #include "EXMIDIMappingEntry.h"
 #include "EXMIDIMapper_PresetControl.h"
 
-class EXMIDIPanelWidget : public QMainWindow
+class EXMIDIPanelWidget : public QWidget
 {
     Q_OBJECT
 

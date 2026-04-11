@@ -9,11 +9,18 @@
 #include <QVariant>
 #include <qabstractitemmodel.h>
 #include <qlist.h>
+#include <qobjectdefs.h>
 #include <qsettings.h>
 
 #include "EXMIDIMappingTableWidget.h"
+#include "EXMIDIMapper_PresetControl.h"
 #include "EXMIDIMappingEntry.h"
 #include "EXMIDIEvent.h"
+
+#include <QDebug>
+#include <QObject>
+#include <QMetaObject>
+#include <QMetaMethod>
 
 MappingTableWidget::MappingTableWidget(QWidget* parent)
     : QWidget(parent)
@@ -22,10 +29,11 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 
     // Port selection
     QHBoxLayout* portRow = new QHBoxLayout();
-    QLabel* portLabel = new QLabel("Select MIDI Input Port:", this);
+    QLabel* portLabel = new QLabel();
+    portLabel->setText("Select MIDI Input Port:");
 
-    portCombo = new QComboBox(this);
-    connectionStatusLabel = new QLabel("Waiting...", this);
+    portCombo = new QComboBox();
+    connectionStatusLabel = new QLabel("Waiting...");
     connectionStatusLabel->setStyleSheet("color: orange;");
 
     connect(portCombo, &QComboBox::currentTextChanged, this, [this](const QString& name) {
@@ -33,14 +41,16 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
         emit sigPortSelected(name);
     });
 
+    QLabel* debugLabel = new QLabel("No Debug Event");
 
     portRow->addWidget(portLabel);
     portRow->addWidget(portCombo);
+    portRow->addWidget(debugLabel);
     portRow->addStretch();
     layout->addLayout(portRow);
 
     // Table showing mappings
-    table = new QTableWidget(this);
+    table = new QTableWidget();
     table->setColumnCount(Column::ColumnCount);
     table->setHorizontalHeaderLabels({
         "Action", "Event Type", "Code", "Behavior", "Threshold", "Hysteresis", "Delete"
@@ -51,6 +61,7 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    table->setRowCount(0);
     for (EXMappedMidiAction action :AllEXMappedMidiActions()) {
         if (action == EXMappedMidiAction::None) continue;
         MappingEntry entry; entry.mappedAction = action;
@@ -85,30 +96,56 @@ void MappingTableWidget::overwriteWithMappings(const QList<std::tuple<int, Mappi
         this->overwriteMappingRow(index, entry);
     }
 }
+void MappingTableWidget::addMappingRow(const MappingEntry& entry = MappingEntry::EmptyMappingEntry())
+{
+    int row = table->rowCount();
+    table->insertRow(row);
+    this->overwriteMappingRow(row, entry);
+}
 
 bool MappingTableWidget::overwriteMappingRow(int rowIndex, const MappingEntry& entry) {
     if (table->rowCount() > rowIndex+1) return false;
 
-    table->setCellWidget(rowIndex, ActionColumn,     mappedActionComboBox(entry.mappedAction));
-    table->setCellWidget(rowIndex, EventTypeColumn,  eventTypeComboBox(entry.eventType));
-    table->setCellWidget(rowIndex, CodeColumn,       midiEventCodeSpinBox(entry.eventCode));
-    table->setCellWidget(rowIndex, BehaviorColumn,   inputBehaviorComboBox(entry.inputBehavior));
-    table->setCellWidget(rowIndex, ThresholdColumn,  thresholdSpinBox(entry.threshold, entry.inputBehavior));
-    table->setCellWidget(rowIndex, HysteresisColumn, hysteresisSpinBox(entry.hysteresis, entry.inputBehavior));
+    QComboBox* maComboBox = mappedActionComboBox(entry.mappedAction);
+    QComboBox* evTComboBo = eventTypeComboBox(entry.eventType);
+    QSpinBox* mEvCSpinBox = midiEventCodeSpinBox(entry.eventCode);
+    QComboBox* iBComboBox = inputBehaviorComboBox(entry.inputBehavior);
+    QSpinBox* tSpinBox = thresholdSpinBox(entry.threshold, entry.inputBehavior);
+    QSpinBox* hSpinBox = hysteresisSpinBox(entry.hysteresis, entry.inputBehavior);
+
+    connect(maComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MappingTableWidget::onAnyWidgetChanged);
+    connect(evTComboBo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,  &MappingTableWidget::onAnyWidgetChanged);
+    connect(mEvCSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MappingTableWidget::onAnyWidgetChanged);
+    connect(iBComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MappingTableWidget::onAnyWidgetChanged);
+    connect(tSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MappingTableWidget::onAnyWidgetChanged);
+    connect(hSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MappingTableWidget::onAnyWidgetChanged);
+
+    table->setCellWidget(rowIndex, ActionColumn,     maComboBox);
+    table->setCellWidget(rowIndex, EventTypeColumn,  evTComboBo);
+    table->setCellWidget(rowIndex, CodeColumn,       mEvCSpinBox);
+    table->setCellWidget(rowIndex, BehaviorColumn,   iBComboBox);
+    table->setCellWidget(rowIndex, ThresholdColumn,  tSpinBox);
+    table->setCellWidget(rowIndex, HysteresisColumn, hSpinBox);
 
     auto* deleteButton = new QPushButton("Delete");
     connect(deleteButton, &QPushButton::clicked, this, [this, rowIndex]() {
         this->emptyRow(rowIndex);
     });
     table->setCellWidget(rowIndex, DeleteColumn, deleteButton);
+    // qDebug() << QString("DEBUG: table row %1 got overwritten").arg(QString::number(rowIndex));
     return true;
 }
 
-void MappingTableWidget::addMappingRow(const MappingEntry& entry = MappingEntry::EmptyMappingEntry())
-{
-    int row = table->rowCount();
-    table->insertRow(row);
-    this->overwriteMappingRow(row, entry);
+void MappingTableWidget::debugSignals(QObject* obj, QString& identifier) {
+    const QMetaObject* metaObject = obj->metaObject();
+    for (int i = 0; i < metaObject->methodCount(); ++i) {
+        QMetaMethod method = metaObject->method(i);
+        if (method.methodType() == QMetaMethod::Signal) {
+            // QObject::connect(obj, method.methodSignature(), [&]() {
+            //     qDebug() << identifier << " emitted Signal:" << method.name();
+            // });
+        }
+    }
 }
 
 void MappingTableWidget::addRowsFromSettings(QSettings& settings)
@@ -128,9 +165,11 @@ QVector<MappingEntry> MappingTableWidget::collectMappingsFromTable() const
     QVector<MappingEntry> out;
     out.reserve(table->rowCount());
 
+    // qDebug() << QString("Number of mappings: %1").arg(QString::number(out.length()));
 
     for (int row = 0; row < table->rowCount(); ++row) {
-
+        // qDebug() << QString("Processing row: %1").arg(QString::number(row));
+        QComboBox* mappedActionComboBox  = qobject_cast<QComboBox*>(table->cellWidget(row, ActionColumn));
         QComboBox* eventTypeComboBox     = qobject_cast<QComboBox*>(table->cellWidget(row, EventTypeColumn));
         QSpinBox* eventCodeSpinBox       = qobject_cast<QSpinBox*>(table->cellWidget(row, CodeColumn));
         QComboBox* inputBehaviorComboBox = qobject_cast<QComboBox*>(table->cellWidget(row, BehaviorColumn));
@@ -139,24 +178,39 @@ QVector<MappingEntry> MappingTableWidget::collectMappingsFromTable() const
 
         MappingEntry e;
 
-        e.mappedAction = EXMappedMidiActionFromString(table->item(row, ActionColumn)->text());
-        e.eventType = eventTypeComboBox ? static_cast<MidiEventType>(eventTypeComboBox->currentData().toInt()) :
+        if (!mappedActionComboBox) qDebug() << "mappedActionComboBox is null";
+        if (!eventTypeComboBox) qDebug() << "eventTypeComboBox is null";
+        if (!eventCodeSpinBox) qDebug() << "eventCodeSpinBox is null";
+        if (!inputBehaviorComboBox) qDebug() << "inputBehaviorComboBox is null";
+        if (!thresholdSpinBox) qDebug() << "thresholdSpinBox is null";
+        if (!hysteresisSpinbox) qDebug() << "hysteresisSpinbox is null";
+
+        e.mappedAction = mappedActionComboBox ? mappedActionComboBox->currentData().value<EXMappedMidiAction>() :
+                                                EXMappedMidiAction::None;
+        e.eventType = eventTypeComboBox ? eventTypeComboBox->currentData().value<MidiEventType>() :
                                           MidiEventType::Unknown;
 
         e.eventCode = eventCodeSpinBox ? eventCodeSpinBox->value() : 0;
-        // e.inputBehavior = ...
+
         if (inputBehaviorComboBox) {
-            // We added items with .setItemData(static_cast<int>(InputBehavior::X))
-            const int raw = inputBehaviorComboBox->currentData().toInt();
-            e.inputBehavior = static_cast<InputBehavior>(raw);
+            e.inputBehavior = inputBehaviorComboBox->currentData().value<InputBehavior>();
         } else {
             e.inputBehavior = InputBehavior::Knob;
         }
         e.threshold  = thresholdSpinBox  ? thresholdSpinBox->value()  : 64;
         e.hysteresis = hysteresisSpinbox ? hysteresisSpinbox->value() : 10;
 
+        // qDebug() << QString("Mapped Action: %1").arg(EXMappedMidiActionToString(e.mappedAction));
+        // qDebug() << QString("Event Type: %1").arg(midiEventTypeToString(e.eventType));
+        // qDebug() << QString("Event Code: %1").arg(QString::number(e.eventCode));
+        // qDebug() << QString("Input Behavior: %1").arg(inputBehaviorToString(e.inputBehavior));
+        // qDebug() << QString("Threshold: %1").arg(QString::number(e.threshold));
+        // qDebug() << QString("Hysteresis: %1").arg(QString::number(e.hysteresis));
+
         out.push_back(e);
     }
+
+    // qDebug() << "Reading table contents succeeded!";
     return out;
 }
 
@@ -169,10 +223,10 @@ void MappingTableWidget::hookRowWidgets(int row)
         // Value change signals (cover common editors)
         if (auto* cb = qobject_cast<QComboBox*>(w)) {
             connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                    this, [this]{ onAnyWidgetChanged(); });
+                    this, [this](int value){ onAnyWidgetChanged(); });
         } else if (auto* sb = qobject_cast<QSpinBox*>(w)) {
             connect(sb, QOverload<int>::of(&QSpinBox::valueChanged),
-                    this, [this]{ onAnyWidgetChanged(); });
+                    this, [this](int value){ onAnyWidgetChanged(); });
         }
     };
 
@@ -183,6 +237,11 @@ void MappingTableWidget::hookRowWidgets(int row)
 
 void MappingTableWidget::onAnyWidgetChanged()
 {
+
+    // qDebug() << "DEBUG: onAnyWidgetChanged reached";
+
+    //this->debugLabel->setText("DEBUG: onAnyWidgetChanged reached");
+
     // Re-apply enable/disable for threshold/hysteresis based on behavior of this row
     for (int row = 0; row < table->rowCount(); ++row) {
         QComboBox* inputBehaviorComboBox  = qobject_cast<QComboBox*>(table->cellWidget(row, BehaviorColumn));
@@ -190,13 +249,24 @@ void MappingTableWidget::onAnyWidgetChanged()
         QSpinBox* hysteresisSpinbox = qobject_cast<QSpinBox*>(table->cellWidget(row, HysteresisColumn));
         if (!inputBehaviorComboBox) continue;
         const auto beh = inputBehaviorComboBox->currentData().value<InputBehavior>();
+        // qDebug() << "DEBUG: inputBehaviorComboBox read";
+        // this->debugLabel->setText("DEBUG: inputBehaviorComboBox read");
         const bool thrOn  = (beh == InputBehavior::Button) || (beh == InputBehavior::Switch);
         const bool hystOn = (beh == InputBehavior::Switch);
-        if (thresholdSpinBox)  thresholdSpinBox->setEnabled(thrOn);
-        if (hysteresisSpinbox) hysteresisSpinbox->setEnabled(hystOn);
+        if (thresholdSpinBox) {
+        // qDebug() << "DEBUG: thresholdSpinBox read";
+        // this->debugLabel->setText("DEBUG: thresholdSpinBox read");
+            thresholdSpinBox->setEnabled(thrOn);
+        }
+        if (hysteresisSpinbox) {
+            // qDebug() << "DEBUG: hysteresisSpinbox read";
+            // this->debugLabel->setText("DEBUG: hysteresisSpinbox read");
+            hysteresisSpinbox->setEnabled(hystOn);
+        }
     }
 
-    emit sigMappingsEdited(collectMappingsFromTable());
+    QVector<MappingEntry> currentMappings = collectMappingsFromTable();
+    emit sigMappingsEdited(currentMappings);
 }
 
 
@@ -336,7 +406,7 @@ void MappingTableWidget::setConnectionStatus(bool connected)
 
 QComboBox* MappingTableWidget::mappedActionComboBox(EXMappedMidiAction initalAction)
 {
-    auto* combo = new QComboBox(this);
+    auto* combo = new QComboBox();
 
     const std::array<const EXMappedMidiAction, 17> itemData = AllEXMappedMidiActions();
     const std::array<const QString, 17> itemTexts = EXMappedMidiActionTexts();
@@ -359,7 +429,7 @@ QComboBox* MappingTableWidget::mappedActionComboBox(EXMappedMidiAction initalAct
 
 QComboBox* MappingTableWidget::eventTypeComboBox(MidiEventType initalEventType)
 {
-    auto* combo = new QComboBox(this);
+    auto* combo = new QComboBox();
 
     const std::array<const MidiEventType, 4> eventTypes = AllMidiEventTypes();
     const std::array<const QString, 4> eventTypeTexts = AllMidiEventTypeTexts();
@@ -382,7 +452,7 @@ QComboBox* MappingTableWidget::eventTypeComboBox(MidiEventType initalEventType)
 
 QSpinBox* MappingTableWidget::midiEventCodeSpinBox(int initialValue)
 {
-    auto* spin = new QSpinBox(this);
+    auto* spin = new QSpinBox();
     spin->setRange(0, 127);
     spin->setValue(initialValue);
     // connect(spin, QOverload<int>::of(&QSpinBox::valueChanged),
@@ -395,7 +465,7 @@ QSpinBox* MappingTableWidget::midiEventCodeSpinBox(int initialValue)
 
 QComboBox* MappingTableWidget::inputBehaviorComboBox(InputBehavior initialBehavior)
 {
-    auto* comboBox = new QComboBox(this);
+    auto* comboBox = new QComboBox();
 
     for (InputBehavior beh : {InputBehavior::Knob, InputBehavior::Button, InputBehavior::Switch}) {
         comboBox->addItem(inputBehaviorToString(beh), QVariant::fromValue(beh));
@@ -410,7 +480,7 @@ QComboBox* MappingTableWidget::inputBehaviorComboBox(InputBehavior initialBehavi
 
 QSpinBox* MappingTableWidget::thresholdSpinBox(int initialValue, InputBehavior behavior)
 {
-    auto* spin = new QSpinBox(this);
+    auto* spin = new QSpinBox();
     spin->setRange(0, 127);
     spin->setValue(initialValue);
 
@@ -424,7 +494,7 @@ QSpinBox* MappingTableWidget::thresholdSpinBox(int initialValue, InputBehavior b
 
 QSpinBox* MappingTableWidget::hysteresisSpinBox(int initialValue, InputBehavior behavior)
 {
-    auto* spin = new QSpinBox(this);
+    auto* spin = new QSpinBox();
     spin->setRange(0, 127);
     spin->setValue(initialValue);
 

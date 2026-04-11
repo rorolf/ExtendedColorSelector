@@ -70,6 +70,9 @@ Q_SIGNALS:
     void sigMappingChanged(int row);
     void sigMappingsEdited(const QVector<MappingEntry>&);
 
+public Q_SLOTS:
+    void onAnyWidgetChanged();
+
 private:
     QTableWidget* table;
     QCheckBox* showLogCheckbox;
@@ -77,11 +80,12 @@ private:
 
     QComboBox* portCombo;
     QLabel* connectionStatusLabel;
+    QLabel* debugLabel;
 
     QStringList currentPorts;
     QString desiredPortName;
     bool isConnected = false;
 
-    void hookRowWidgets(int row); // for connecting
-    void onAnyWidgetChanged();
+    void hookRowWidgets(int row);
+    void debugSignals(QObject* obj, QString& identifier);
 };

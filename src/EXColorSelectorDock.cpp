@@ -151,7 +151,8 @@ EXColorSelectorDock::EXColorSelectorDock()
     colorSelectLayout->addLayout(mixPresetLayout);
 
     m_midiPanel = new EXMIDIPanelWidget();
-
+    QVBoxLayout* midiLayout = new QVBoxLayout();
+    midiLayout->addWidget(m_midiPanel);
     m_tabWidget = new QTabWidget();
 
 
@@ -242,7 +243,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     //################################################################################
 
     m_tabWidget->addTab(colorSelectWidget, "ColorSelector");
-    m_tabWidget->addTab(m_midiPanel->centralWidget(), "Midi");
+    m_tabWidget->addTab(m_midiPanel, "Midi");
 
     setWidget(m_tabWidget);
 

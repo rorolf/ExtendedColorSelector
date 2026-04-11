@@ -8,9 +8,8 @@ LogPanelWidget::LogPanelWidget(QWidget* parent)
     : QWidget(parent)
 {
     QVBoxLayout* logLayout = new QVBoxLayout(this);
-    logLayout->setContentsMargins(8, 9, 8, 10);  // Tuned based on your findings
+    logLayout->setContentsMargins(8, 9, 8, 10);
 
-    // Fake top label for spacing alignment
     QLabel* topSpacing = new QLabel(" ", this);
     logLayout->addWidget(topSpacing);
 
