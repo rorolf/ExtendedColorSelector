@@ -47,11 +47,7 @@ public:
     explicit MidiListener(QObject* parent = nullptr);
     ~MidiListener();
 
-    QThread* midiThread;
-
     QStringList availableInputPorts() const;
-    void openPort(int index);
-    void closePort();
 
     void startOrReplaceMidiReceiver(const QString& deviceName);
 
@@ -60,12 +56,9 @@ Q_SIGNALS:
     void sigErrorOccurred(const QString& message);
 
 private:
-    // RtMidiIn* midiIn;
-    // libremidi::midi_out
-    static void rtMidiCallback(double, std::vector<unsigned char>*, void* userData);
-};
+    QThread* midiThread;
 
-//typedef KisSharedPtr<MidiListener> MidiListenerSP;
+};
 
 
 

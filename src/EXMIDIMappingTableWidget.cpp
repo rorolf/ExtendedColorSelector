@@ -41,11 +41,8 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
         emit sigPortSelected(name);
     });
 
-    QLabel* debugLabel = new QLabel("No Debug Event");
-
     portRow->addWidget(portLabel);
     portRow->addWidget(portCombo);
-    portRow->addWidget(debugLabel);
     portRow->addStretch();
     layout->addLayout(portRow);
 
@@ -136,18 +133,6 @@ bool MappingTableWidget::overwriteMappingRow(int rowIndex, const MappingEntry& e
     return true;
 }
 
-void MappingTableWidget::debugSignals(QObject* obj, QString& identifier) {
-    const QMetaObject* metaObject = obj->metaObject();
-    for (int i = 0; i < metaObject->methodCount(); ++i) {
-        QMetaMethod method = metaObject->method(i);
-        if (method.methodType() == QMetaMethod::Signal) {
-            // QObject::connect(obj, method.methodSignature(), [&]() {
-            //     qDebug() << identifier << " emitted Signal:" << method.name();
-            // });
-        }
-    }
-}
-
 void MappingTableWidget::addRowsFromSettings(QSettings& settings)
 {
     Q_UNUSED(settings);
@@ -218,9 +203,7 @@ void MappingTableWidget::hookRowWidgets(int row)
 {
     auto hook = [&](QWidget* w) {
         if (!w) return;
-        // Use a direct lambda that calls our unified handler
-        connect(w, SIGNAL(destroyed(QObject*)), this, SLOT(update())); // harmless safety
-        // Value change signals (cover common editors)
+        connect(w, SIGNAL(destroyed(QObject*)), this, SLOT(update()));
         if (auto* cb = qobject_cast<QComboBox*>(w)) {
             connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
                     this, [this](int value){ onAnyWidgetChanged(); });
@@ -238,29 +221,19 @@ void MappingTableWidget::hookRowWidgets(int row)
 void MappingTableWidget::onAnyWidgetChanged()
 {
 
-    // qDebug() << "DEBUG: onAnyWidgetChanged reached";
-
-    //this->debugLabel->setText("DEBUG: onAnyWidgetChanged reached");
-
-    // Re-apply enable/disable for threshold/hysteresis based on behavior of this row
+    // Re-apply enable/disable for threshold/hysteresis based on behavior of each row
     for (int row = 0; row < table->rowCount(); ++row) {
         QComboBox* inputBehaviorComboBox  = qobject_cast<QComboBox*>(table->cellWidget(row, BehaviorColumn));
         QSpinBox* thresholdSpinBox  = qobject_cast<QSpinBox*>(table->cellWidget(row, ThresholdColumn));
         QSpinBox* hysteresisSpinbox = qobject_cast<QSpinBox*>(table->cellWidget(row, HysteresisColumn));
         if (!inputBehaviorComboBox) continue;
         const auto beh = inputBehaviorComboBox->currentData().value<InputBehavior>();
-        // qDebug() << "DEBUG: inputBehaviorComboBox read";
-        // this->debugLabel->setText("DEBUG: inputBehaviorComboBox read");
         const bool thrOn  = (beh == InputBehavior::Button) || (beh == InputBehavior::Switch);
         const bool hystOn = (beh == InputBehavior::Switch);
         if (thresholdSpinBox) {
-        // qDebug() << "DEBUG: thresholdSpinBox read";
-        // this->debugLabel->setText("DEBUG: thresholdSpinBox read");
             thresholdSpinBox->setEnabled(thrOn);
         }
         if (hysteresisSpinbox) {
-            // qDebug() << "DEBUG: hysteresisSpinbox read";
-            // this->debugLabel->setText("DEBUG: hysteresisSpinbox read");
             hysteresisSpinbox->setEnabled(hystOn);
         }
     }
@@ -418,11 +391,6 @@ QComboBox* MappingTableWidget::mappedActionComboBox(EXMappedMidiAction initalAct
     }
 
     combo->setCurrentIndex(initialIndex);
-    // connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-    //     this, [this, row](int index) {
-    //         mappings[row].eventTypeIndex = index;
-    //     }
-    // );
     return combo;
 }
 
@@ -442,11 +410,6 @@ QComboBox* MappingTableWidget::eventTypeComboBox(MidiEventType initalEventType)
         }
     }
     combo->setCurrentIndex(initialIndex);
-    // connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-    //     this, [this, row](int index) {
-    //         mappings[row].eventTypeIndex = index;
-    //     }
-    // );
     return combo;
 }
 
@@ -455,11 +418,6 @@ QSpinBox* MappingTableWidget::midiEventCodeSpinBox(int initialValue)
     auto* spin = new QSpinBox();
     spin->setRange(0, 127);
     spin->setValue(initialValue);
-    // connect(spin, QOverload<int>::of(&QSpinBox::valueChanged),
-    //     this, [this, row](int value) {
-    //         //mappings[row].eventCode = value;
-    //     }
-    // );
     return spin;
 }
 
