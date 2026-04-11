@@ -34,13 +34,13 @@ MidiEvent MidiEvent::fromRtMidiMessage(const QByteArray& data) {
     evt.channel = (status & 0x0F) + 1;
 
     switch (typeCode) {
-        case 0x80:
+        case NOTEOFF:
             evt.type = MidiEventType::NoteOff;
             break;
-        case 0x90:
+        case NOTEON:
             evt.type = MidiEventType::NoteOn;
             break;
-        case 0xB0:
+        case CTRLCHANGE:
             evt.type = MidiEventType::ControlChange;
             break;
         default:
@@ -50,6 +50,37 @@ MidiEvent MidiEvent::fromRtMidiMessage(const QByteArray& data) {
 
     evt.code = data1;
     evt.value = data2;
+    return evt;
+}
+
+MidiEvent MidiEvent::fromPortMidiMessage(const PmEvent& midiData) {
+    // no meaningful differences in received messages found, yet
+
+    MidiEvent evt;
+
+    int msgStatus = Pm_MessageStatus(midiData.message);
+    evt.code = Pm_MessageData1(midiData.message);
+    evt.value = Pm_MessageData2(midiData.message);
+
+    int typeCode = msgStatus & 0xF0;
+    evt.channel = (msgStatus & 0x0F) + 1;
+
+    switch (typeCode) {
+        case NOTEOFF:
+            evt.type = MidiEventType::NoteOff;
+            break;
+        case NOTEON:
+            evt.type = MidiEventType::NoteOn;
+            break;
+        case CTRLCHANGE:
+            evt.type = MidiEventType::ControlChange;
+            break;
+        default:
+            evt.type = MidiEventType::Unknown;
+            break;
+    }
+
+
     return evt;
 }
 

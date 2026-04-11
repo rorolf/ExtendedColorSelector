@@ -4,6 +4,8 @@
 #include <QMetaType>
 #include <QString>
 
+#include <portmidi.h>
+
 enum class MidiEventType {
     NoteOn,
     NoteOff,
@@ -11,6 +13,10 @@ enum class MidiEventType {
     Unknown
 };
 Q_DECLARE_METATYPE(MidiEventType);
+
+const int NOTEOFF = 0x80;
+const int NOTEON = 0x90;
+const int CTRLCHANGE = 0xB0;
 
 inline static const std::array<const MidiEventType, 4> AllMidiEventTypes() {
     static const std::array<const MidiEventType, 4> types = {
@@ -58,5 +64,6 @@ struct MidiEvent {
     QString toString() const;
     bool isValid() const;
     static MidiEvent fromRtMidiMessage(const QByteArray& data);
+    static MidiEvent fromPortMidiMessage(const PmEvent& data);
 };
 Q_DECLARE_METATYPE(MidiEvent)
