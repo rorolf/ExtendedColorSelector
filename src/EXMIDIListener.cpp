@@ -78,7 +78,11 @@ void MidiListener::startOrReplaceMidiReceiver(const QString& deviceName) {
          // on same thread
         connect(midiThread, &QThread::started, midiReceiver, [midiReceiver](){ midiReceiver->start(); });
         // between threads
-        connect(midiReceiver, &MidiThreadReceiver::sigMidiMessageArrived, this, &MidiListener::sigMidiMessageArrived, Qt::QueuedConnection);
+        // connect(midiReceiver, &MidiThreadReceiver::sigMidiMessageArrived, this, &MidiListener::sigMidiMessageArrived, Qt::QueuedConnection);
+        connect(midiReceiver, &MidiThreadReceiver::sigMidiMessageArrived, this, [this](MidiEvent evt) {
+            qDebug() << "MidiListener received event:" << evt.toString();
+            emit this->sigMidiMessageArrived(evt);
+        }, Qt::QueuedConnection);
         connect(midiReceiver, &MidiThreadReceiver::sigErrorOccurred, this, &MidiListener::sigErrorOccurred, Qt::QueuedConnection);
         qDebug() << "MidiListener moves the new MidiThreadReceiver to a new thread.";
         midiReceiver->moveToThread(midiThread);
