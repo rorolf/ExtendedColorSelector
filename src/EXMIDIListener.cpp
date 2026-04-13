@@ -86,6 +86,13 @@ void MidiListener::startOrReplaceMidiReceiver(const QString& deviceName) {
     }
 }
 
+void MidiListener::stopListening() {
+    if (this->midiThread) {
+        midiThread->quit();
+        midiThread = nullptr;
+    }
+}
+
 MidiThreadReceiver::~MidiThreadReceiver()
 {
     qDebug() << "MidiThreadReceiver gets destroyed.";

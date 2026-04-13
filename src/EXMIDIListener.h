@@ -50,6 +50,7 @@ public:
     QStringList availableInputPorts() const;
 
     void startOrReplaceMidiReceiver(const QString& deviceName);
+    void stopListening();
 
 Q_SIGNALS:
     void sigMidiMessageArrived(const MidiEvent midiData);

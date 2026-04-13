@@ -152,7 +152,9 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& portName) {
         int idx = currentPorts.indexOf(portName);
         if (idx != -1) {
-            m_midiListener->openPort(idx);
+            // m_midiListener->openPort(idx);
+            qDebug() << "New port selected (lambda)." << "Starting new receiver for:" << portName;
+            m_midiListener->startOrReplaceMidiReceiver(portName);
             currentPortName = portName;
             // m_ui->m_midiPanel->logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
             emit sigLogMessage(QString("[Connected to port %1]").arg(portName));
@@ -199,10 +201,14 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     //##  Initialization of variables
     //################################################################################
 
-    currentPorts = m_midiListener->availableInputPorts();
+    this->currentPorts = m_midiListener->availableInputPorts();
+    if (!currentPorts.isEmpty()) { this->currentPortName = currentPorts[0]; }
+    else { this->currentPortName = ""; }
     // Try to connect to first available port
     if (!currentPorts.isEmpty()) {
-        m_midiListener->openPort(0);
+        // m_midiListener->openPort(0);
+        qDebug() << "Initializing EXActionbus." << "Starting new receiver for:" << currentPortName;
+        m_midiListener->startOrReplaceMidiReceiver(currentPortName);
         emit sigInputPortsChanged(currentPorts);
     }
 
@@ -226,7 +232,9 @@ void EXActionBus::onRefreshMidiPorts() {
         int index = currentPorts.indexOf(portName);
         if (index != -1) {
             if (portName != currentPortName) {
-                m_midiListener->openPort(index);
+                // m_midiListener->openPort(index);
+                qDebug() << "Refreshing Midi ports." << "Starting new receiver for:" << portName;
+                m_midiListener->startOrReplaceMidiReceiver(portName);
                 currentPortName = portName;
                 m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
                 //logPanel->appendLine(QString("[Auto-connected to %1]").arg(portName));
@@ -237,7 +245,9 @@ void EXActionBus::onRefreshMidiPorts() {
         }
     } else {
         if (!currentPortName.isEmpty()) {
-            m_midiListener->closePort();
+            // m_midiListener->closePort();
+            qDebug() << "Closing Midi Receiver";
+            m_midiListener->stopListening();
             currentPortName.clear();
         }
         m_ui->m_midiPanel->mappingTable->setConnectionStatus(false);
@@ -248,7 +258,9 @@ void EXActionBus::onPortSelected(const QString& portName)
 {
     int index = currentPorts.indexOf(portName);
     if (index != -1) {
-        m_midiListener->openPort(index);
+        // m_midiListener->openPort(index);
+        qDebug() << "New port selected." << "Starting new receiver for:" << portName;
+        m_midiListener->startOrReplaceMidiReceiver(portName);
         currentPortName = portName;
         //logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
         emit sigLogMessage(QString("[Connected to port %1]").arg(portName));
