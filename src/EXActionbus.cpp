@@ -39,7 +39,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     EXColorSelectorDock* uiCapture = m_tmpui;
     EXColorMixStateSP mixerCapture = m_mixer;
     QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
-    LogPanelWidget* logPanelCapture = m_ui->m_midiPanel->logPanel;
+    LogPanelWidget* logPanelCapture = m_tmpui->m_midiPanel->logPanel;
 
     connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture](QVector3D newClr) {
         QColor newQClr = mixerCapture->toQColor(newClr);
@@ -77,13 +77,13 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
 
-    // connect(this, &EXActionBus::sigInputPortsChanged, m_ui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
-    //
-    // connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_ui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
-    // connect(m_midiListener, &MidiListener::sigErrorOccurred, m_ui->m_midiPanel, &EXMIDIPanelWidget::onError);
-    // connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
-    //     logPanelCapture->onMidiMessage(evt);
-    // });
+    connect(this, &EXActionBus::sigInputPortsChanged, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
+
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
+    connect(m_midiListener, &MidiListener::sigErrorOccurred, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onError);
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
+        logPanelCapture->onMidiMessage(evt);
+    });
 
 }
 
