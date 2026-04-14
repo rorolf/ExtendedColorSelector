@@ -7,7 +7,6 @@ set(RTMIDI_API_ALSA  ON CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(external/PortMidi)
 # add_subdirectory(external/PortMidi/porttime) # does NOT contain CMakeLists.txt
-add_subdirectory(external/rtmidi)
 
 if(NOT TARGET portmidi)
     message(FATAL_ERROR
@@ -18,16 +17,6 @@ endif()
 
 get_target_property(PM_TYPE portmidi TYPE)
 message(STATUS "PortMidi target type: ${PM_TYPE}")
-
-if(NOT TARGET rtmidi)
-    message(FATAL_ERROR
-        "rtmidi target not found. "
-        "Ensure external/rtmidi contains a valid RtMidi source tree."
-    )
-endif()
-
-get_target_property(RM_TYPE rtmidi TYPE)
-message(STATUS "RtMidi target type: ${RM_TYPE}")
 
 add_subdirectory(src)
 
