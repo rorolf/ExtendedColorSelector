@@ -49,12 +49,13 @@ public:
 
     QStringList availableInputPorts() const;
 
-    void startOrReplaceMidiReceiver(const QString& deviceName);
+    void startListeningTo(const QString& deviceName);
     void stopListening();
 
 Q_SIGNALS:
     void sigMidiMessageArrived(const MidiEvent midiData);
     void sigErrorOccurred(const QString& message);
+    void sigNowListeningTo(const QString& deviceName);
 
 private:
     QThread* midiThread;

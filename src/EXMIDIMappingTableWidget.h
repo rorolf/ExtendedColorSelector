@@ -72,6 +72,7 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void onAnyWidgetChanged();
+    void onMidiDeviceChanged(const QString& deviceName);
 
 private:
     QTableWidget* table;

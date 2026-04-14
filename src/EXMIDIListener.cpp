@@ -15,7 +15,7 @@ MidiListener::MidiListener(QObject* parent)
     , midiThread(nullptr)
 {
     QString deviceName = "LPD8 mk2 MIDI 1";
-    this->startOrReplaceMidiReceiver(deviceName);
+    this->startListeningTo(deviceName);
 }
 
 MidiListener::~MidiListener()
@@ -40,7 +40,9 @@ QStringList MidiListener::availableInputPorts() const
     return ports;
 }
 
-void MidiListener::startOrReplaceMidiReceiver(const QString& deviceName) {
+void MidiListener::startListeningTo(const QString& deviceName) {
+
+    qDebug() << "MidiListener asked to listen to device:" << deviceName;
     PmDeviceID pmidiInputID = Pm_GetDefaultInputDeviceID();
     bool deviceFound = false;
 
@@ -87,14 +89,17 @@ void MidiListener::startOrReplaceMidiReceiver(const QString& deviceName) {
         qDebug() << "MidiListener moves the new MidiThreadReceiver to a new thread.";
         midiReceiver->moveToThread(midiThread);
         midiThread->start(QThread::TimeCriticalPriority);
+
+        emit sigNowListeningTo(deviceName);
     }
 }
 
 void MidiListener::stopListening() {
     if (this->midiThread) {
+        qDebug() << "MidiListener stops listening.";
         midiThread->quit();
         midiThread = nullptr;
-    }
+    } else { qDebug() << "MidiListener had already stopped listening."; }
 }
 
 MidiThreadReceiver::~MidiThreadReceiver()
@@ -111,6 +116,7 @@ void MidiThreadReceiver::start() {
     PmTimeProcPtr TIME_PROC = nullptr; // originally: ((PmTimeProcPtr) Pt_Time);
     void* TIME_INFO = nullptr;
     qDebug() << "MidiThreadReceiver opens stream.";
+    // TODO: How to detect Failure?
     Pm_OpenInput(&midiInStream, this->inputDeviceId, DRIVER_INFO, INPUT_BUFFER_SIZE,
                      TIME_PROC, TIME_INFO);
 

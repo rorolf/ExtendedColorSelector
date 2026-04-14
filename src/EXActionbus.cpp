@@ -7,7 +7,9 @@
 #include "EXColorMixState.h"
 #include "EXColorMixerDock.h"
 #include "EXMIDIEvent.h"
+#include "EXMIDIListener.h"
 #include "EXMIDIMapper_PresetControl.h"
+#include "EXMIDIMappingTableWidget.h"
 #include <qglobal.h>
 
 
@@ -78,6 +80,12 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     });
 
     connect(this, &EXActionBus::sigInputPortsChanged, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
+    connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, m_midiListener, [this](QString portName) {
+        m_midiListener->startListeningTo(portName);
+    });
+
+    MappingTableWidget* mappingTableCapture = m_tmpui->m_midiPanel->mappingTable;
+    connect(m_midiListener, &MidiListener::sigNowListeningTo, mappingTableCapture, &MappingTableWidget::onMidiDeviceChanged);
 
     connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
     connect(m_midiListener, &MidiListener::sigErrorOccurred, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onError);
@@ -149,18 +157,15 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     });
 
     //TODO: maybe add signal/slot for setting connection status
-    connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& portName) {
-        int idx = currentPorts.indexOf(portName);
+    connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& deviceName) {
+        int idx = currentPorts.indexOf(deviceName);
         if (idx != -1) {
-            // m_midiListener->openPort(idx);
-            qDebug() << "New port selected (lambda)." << "Starting new receiver for:" << portName;
-            m_midiListener->startOrReplaceMidiReceiver(portName);
-            currentPortName = portName;
-            // m_ui->m_midiPanel->logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
-            emit sigLogMessage(QString("[Connected to port %1]").arg(portName));
-            this->m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
-        } else {
             this->m_ui->m_midiPanel->mappingTable->setConnectionStatus(false);
+            qDebug() << "New port selected (lambda)." << "Starting new receiver for:" << deviceName;
+            m_midiListener->startListeningTo(deviceName);
+            currentPortName = deviceName;
+        } else {
+            emit sigLogMessage(QString("[Tried to connect to unknown device %1]").arg(deviceName));
         }
     });
 
@@ -208,7 +213,7 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     if (!currentPorts.isEmpty()) {
         // m_midiListener->openPort(0);
         qDebug() << "Initializing EXActionbus." << "Starting new receiver for:" << currentPortName;
-        m_midiListener->startOrReplaceMidiReceiver(currentPortName);
+        m_midiListener->startListeningTo(currentPortName);
         emit sigInputPortsChanged(currentPorts);
     }
 
@@ -234,7 +239,7 @@ void EXActionBus::onRefreshMidiPorts() {
             if (portName != currentPortName) {
                 // m_midiListener->openPort(index);
                 qDebug() << "Refreshing Midi ports." << "Starting new receiver for:" << portName;
-                m_midiListener->startOrReplaceMidiReceiver(portName);
+                m_midiListener->startListeningTo(portName);
                 currentPortName = portName;
                 m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
                 //logPanel->appendLine(QString("[Auto-connected to %1]").arg(portName));
@@ -260,7 +265,7 @@ void EXActionBus::onPortSelected(const QString& portName)
     if (index != -1) {
         // m_midiListener->openPort(index);
         qDebug() << "New port selected." << "Starting new receiver for:" << portName;
-        m_midiListener->startOrReplaceMidiReceiver(portName);
+        m_midiListener->startListeningTo(portName);
         currentPortName = portName;
         //logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
         emit sigLogMessage(QString("[Connected to port %1]").arg(portName));

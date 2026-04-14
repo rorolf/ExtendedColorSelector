@@ -32,13 +32,12 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
     QLabel* portLabel = new QLabel();
     portLabel->setText("Select MIDI Input Port:");
 
-    portCombo = new QComboBox();
-    connectionStatusLabel = new QLabel("Waiting...");
+    this->portCombo = new QComboBox();
+    this->connectionStatusLabel = new QLabel("Waiting...");
     connectionStatusLabel->setStyleSheet("color: orange;");
 
     connect(portCombo, &QComboBox::currentTextChanged, this, [this](const QString& name) {
-        desiredPortName = name;
-        emit sigPortSelected(name);
+        this->setDesiredPort(name);
     });
 
     portRow->addWidget(portLabel);
@@ -242,7 +241,17 @@ void MappingTableWidget::onAnyWidgetChanged()
     emit sigMappingsEdited(currentMappings);
 }
 
-
+void MappingTableWidget::onMidiDeviceChanged(const QString& deviceName) {
+    if (deviceName == NULL || deviceName.isEmpty()) {
+        this->connectionStatusLabel->setText(QString("No connection"));
+        connectionStatusLabel->setStyleSheet("color: red;");
+    } else if (deviceName == this->desiredPortName) {
+        this->setConnectionStatus(true);
+    } else {
+        this->connectionStatusLabel->setText(QString("Connected to %1 instead").arg(deviceName));
+        connectionStatusLabel->setStyleSheet("color: red;");
+    }
+}
 
 
 
@@ -317,10 +326,12 @@ void MappingTableWidget::emptyRow(int row)
 
 void MappingTableWidget::setPortList(const QStringList& ports)
 {
-    portCombo->blockSignals(true);
-    portCombo->clear();
-    portCombo->addItems(ports);
-    portCombo->blockSignals(false);
+    // portCombo->blockSignals(true);
+    // portCombo->clear();
+    // portCombo->addItems(ports);
+    // portCombo->blockSignals(false);
+
+    this->setAvailablePorts(ports);
 }
 
 QString MappingTableWidget::currentPortName() const
@@ -346,11 +357,22 @@ void MappingTableWidget::setAvailablePorts(const QStringList& ports)
     portCombo->clear();
     portCombo->addItems(ports);
     portCombo->blockSignals(false);
+
+    bool resetDesiredPortName = true;
+    for (auto device : this->currentPorts) {
+        if (device == this->desiredPortName) {
+            resetDesiredPortName = false;
+            break;
+        }
+    }
+    if (ports.length()>0 && resetDesiredPortName) { this->setDesiredPort(ports[0]); }
 }
 
 void MappingTableWidget::setDesiredPort(const QString& port)
 {
     desiredPortName = port;
+    this->setConnectionStatus(false);
+    emit sigPortSelected(port);
 }
 
 QString MappingTableWidget::desiredPort() const
