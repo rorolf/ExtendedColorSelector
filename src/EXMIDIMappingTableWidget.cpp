@@ -206,10 +206,10 @@ void MappingTableWidget::hookRowWidgets(int row)
         connect(w, SIGNAL(destroyed(QObject*)), this, SLOT(update()));
         if (auto* cb = qobject_cast<QComboBox*>(w)) {
             connect(cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                    this, [this](int value){ onAnyWidgetChanged(); });
+                    this, [this](int value){ Q_UNUSED(value); onAnyWidgetChanged(); });
         } else if (auto* sb = qobject_cast<QSpinBox*>(w)) {
             connect(sb, QOverload<int>::of(&QSpinBox::valueChanged),
-                    this, [this](int value){ onAnyWidgetChanged(); });
+                    this, [this](int value){ Q_UNUSED(value); onAnyWidgetChanged(); });
         }
     };
 
