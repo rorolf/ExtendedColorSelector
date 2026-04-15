@@ -115,6 +115,7 @@ inline int MidiActionDeviceIndex(EXMappedMidiAction action) {
 struct MappingEntry {
     public:
         static MappingEntry EmptyMappingEntry() { MappingEntry e; return e; }
+        static MappingEntry Default(EXMappedMidiAction action);
 
         MidiEventType eventType = MidiEventType::Unknown;
         int eventCode = 0;
