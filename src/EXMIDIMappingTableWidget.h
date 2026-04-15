@@ -34,10 +34,7 @@ class MappingTableWidget : public QWidget
 public:
     explicit MappingTableWidget(QWidget* parent = nullptr);
 
-
-    void addRowsFromSettings(QSettings& settings);
     QVector<MappingEntry> collectMappingsFromTable() const;
-    void saveMappingsToSettings(QSettings& settings) const;
     void overwriteWithMappings(const QList<MappingEntry>& entries);
     void overwriteWithMappings(const QList<std::tuple<int, MappingEntry>>& entries);
 

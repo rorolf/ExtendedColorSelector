@@ -58,9 +58,6 @@ void EXMIDIPanelWidget::loadSettings()
     QString savedPort = settings.value("selectedPort").toString();
     mappingTable->setDesiredPort(savedPort);
 
-    mappingTable->addRowsFromSettings(settings);
-
-
     QList<std::tuple<int, MappingEntry>> loadedMappings = QList<std::tuple<int, MappingEntry>>();
     int mappingCount = settings.beginReadArray("mappings");
     for (int k = 0; k < mappingCount; ++k) {

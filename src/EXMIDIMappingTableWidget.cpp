@@ -147,17 +147,7 @@ bool MappingTableWidget::overwriteMappingRow(int rowIndex, const MappingEntry& e
     return true;
 }
 
-void MappingTableWidget::addRowsFromSettings(QSettings& settings)
-{
-    Q_UNUSED(settings);
-    // TODO: read mappings from settings
-    // this->overwriteWithMappings(mappings);
-}
 
-void MappingTableWidget::saveMappingsToSettings(QSettings& settings) const {
-    Q_UNUSED(settings);
-    //QVector<MappingEntry> mappings = MappingTableWidget::collectMappingsFromTable();
-}
 
 QVector<MappingEntry> MappingTableWidget::collectMappingsFromTable() const
 {
