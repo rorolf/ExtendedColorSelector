@@ -59,9 +59,15 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
     table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     table->setRowCount(0);
-    for (EXMappedMidiAction action :AllEXMappedMidiActions()) {
+    int knobCode = 70;
+    int padCode = 36;
+    for (EXMappedMidiAction action : AllEXMappedMidiActions()) {
         if (action == EXMappedMidiAction::None) continue;
-        MappingEntry entry; entry.mappedAction = action;
+
+        MappingEntry entry = MappingEntry::Default(action);
+        if (entry.mapsToKnob())     { entry.eventCode = knobCode++; }
+        else if (entry.mapsToPad()) { entry.eventCode = padCode++; }
+
         this->addMappingRow(entry);
     }
 
