@@ -79,6 +79,7 @@ EXMIDIPanelWidget::~EXMIDIPanelWidget() {
 
 void EXMIDIPanelWidget::loadSettings()
 {
+    qDebug() << "Loading Mappings from file...";
     QSettings settings("KritaExtension", "MidiGuiListener");
 
     pendingReconnectPortName = settings.value("selectedPort").toString();
@@ -94,7 +95,7 @@ void EXMIDIPanelWidget::loadSettings()
     mappingTable->addRowsFromSettings(settings);
 
 
-    QList<std::tuple<int, MappingEntry>>* loadedMappings = new QList<std::tuple<int, MappingEntry>>();
+    QList<std::tuple<int, MappingEntry>> loadedMappings = QList<std::tuple<int, MappingEntry>>();
     int mappingCount = settings.beginReadArray("mappings");
     for (int k = 0; k < mappingCount; ++k) {
         settings.setArrayIndex(k);
@@ -104,22 +105,43 @@ void EXMIDIPanelWidget::loadSettings()
         entry.inputBehavior = inputBehaviorFromString(settings.value("behavior").toString());
         entry.threshold = settings.value("threshold").toInt();
         entry.mappedAction = EXMappedMidiActionFromString(settings.value("mappedAction").toString());
-        mappings.append(entry);
-        loadedMappings->append({k, entry});
+        loadedMappings.append({k, entry});
+
+        qDebug() << "Loaded settings for row" << QString::number(k)
+                << EXMappedMidiActionToString(entry.mappedAction)
+                << midiEventTypeToString(entry.eventType)
+                << QString::number(entry.eventCode)
+                << inputBehaviorToString(entry.inputBehavior)
+                << QString::number(entry.threshold)
+                << QString::number(entry.hysteresis)
+        ;
+
     }
     settings.endArray();
 
-    mappingTable->overwriteWithMappings(*loadedMappings);
+    mappingTable->overwriteWithMappings(loadedMappings);
 }
 
 void EXMIDIPanelWidget::saveSettings()
 {
+    qDebug() << "Saving Mappings to file...";
     QSettings settings("KritaExtension", "MidiGuiListener");
 
     settings.setValue("selectedPort", mappingTable->desiredPort());
 
     settings.beginWriteArray("mappings");
+    QVector<MappingEntry> mappings = this->mappingTable->collectMappingsFromTable();
     for (int i = 0; i < mappings.size(); ++i) {
+        MappingEntry entry = mappings[i];
+        qDebug() << "Saving settings for row" << QString::number(i)
+                << EXMappedMidiActionToString(entry.mappedAction)
+                << midiEventTypeToString(entry.eventType)
+                << QString::number(entry.eventCode)
+                << inputBehaviorToString(entry.inputBehavior)
+                << QString::number(entry.threshold)
+                << QString::number(entry.hysteresis)
+        ;
+
         settings.setArrayIndex(i);
         settings.setValue("eventType", midiEventTypeToString(mappings[i].eventType));
         settings.setValue("code", mappings[i].eventCode);
@@ -128,6 +150,7 @@ void EXMIDIPanelWidget::saveSettings()
         settings.setValue("mappedAction", EXMappedMidiActionToString(mappings[i].mappedAction));
     }
     settings.endArray();
+    qDebug() << "Saving Mappings to File concluded";
 }
 
 

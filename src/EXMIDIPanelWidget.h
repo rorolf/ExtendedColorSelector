@@ -56,7 +56,7 @@ public:
     // QString currentPortName;
     // QTimer* portRefreshTimer;
 
-    QList<MappingEntry> mappings;
+    // QList<MappingEntry> mappings;
 };
 
 typedef KisSharedPtr<EXMIDIPanelWidget> EXMIDIPanelWidgetSP;
