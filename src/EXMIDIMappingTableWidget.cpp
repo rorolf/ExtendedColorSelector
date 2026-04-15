@@ -365,6 +365,19 @@ void MappingTableWidget::setAvailablePorts(const QStringList& ports)
 void MappingTableWidget::setDesiredPort(const QString& port)
 {
     desiredPortName = port;
+    int idx = this->portCombo->findText(port);
+    if (idx >= 0) {
+        portCombo->blockSignals(true);
+        portCombo->setCurrentIndex(idx);
+        portCombo->blockSignals(false);
+    } else {
+        qDebug() << "Error: desired Midi device set to unknown device:" << port;
+        qDebug() << "Known Devices:";
+        for (int k = 0; k<portCombo->count(); ++k) {
+            qDebug() << "\t" << portCombo->itemText(k);
+        }
+    }
+
     this->setConnectionStatus(false);
     emit sigPortSelected(port);
 }
