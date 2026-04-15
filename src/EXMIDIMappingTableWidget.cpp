@@ -383,7 +383,7 @@ QString MappingTableWidget::desiredPort() const
 
 void MappingTableWidget::setConnectionStatus(bool connected)
 {
-    isConnected = connected;
+    this->isConnected = connected;
 
     if (connected) {
         connectionStatusLabel->setText(QString("Connected to %1").arg(desiredPortName));
