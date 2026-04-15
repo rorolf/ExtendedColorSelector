@@ -14,7 +14,7 @@ MidiListener::MidiListener(QObject* parent)
     : QObject(parent)//, midiIn(new RtMidiIn())
     , midiThread(nullptr)
 {
-    QString deviceName = "LPD8 mk2 MIDI 1";
+    QString deviceName = "";
     this->startListeningTo(deviceName);
 }
 
