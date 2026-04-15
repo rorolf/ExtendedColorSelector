@@ -29,6 +29,7 @@ enum Column {
 class MappingTableWidget : public QWidget
 {
     Q_OBJECT
+    friend class EXActionBus;
 
 public:
     explicit MappingTableWidget(QWidget* parent = nullptr);
