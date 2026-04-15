@@ -331,6 +331,7 @@ QString MappingTableWidget::currentPortName() const
 void MappingTableWidget::setCurrentPortIndex(int index)
 {
     portCombo->setCurrentIndex(index);
+    this->setDesiredPort(portCombo->currentText());
 }
 
 
