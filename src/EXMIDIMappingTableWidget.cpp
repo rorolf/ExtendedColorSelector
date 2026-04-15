@@ -42,6 +42,7 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 
     portRow->addWidget(portLabel);
     portRow->addWidget(portCombo);
+    portRow->addWidget(connectionStatusLabel);
     portRow->addStretch();
     layout->addLayout(portRow);
 
@@ -73,8 +74,8 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
     bottomRow->addWidget(showLogCheckbox);
 
 
-    bottomRow->addWidget(portCombo);
-    bottomRow->addWidget(connectionStatusLabel);
+    // bottomRow->addWidget(portCombo);
+    // bottomRow->addWidget(connectionStatusLabel);
 
     bottomRow->addStretch();
     layout->addLayout(bottomRow);
