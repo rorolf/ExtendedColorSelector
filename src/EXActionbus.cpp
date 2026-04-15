@@ -93,6 +93,85 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         logPanelCapture->onMidiMessage(evt);
     });
 
+
+    connect(this, &EXActionBus::sigLogMessage, logPanelCapture, [logPanelCapture](const QString& message) {
+        logPanelCapture->appendLine(message);
+    });
+
+    // //TODO: maybe add signal/slot for setting connection status
+    // connect(m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& deviceName) {
+    //     int idx = currentPorts.indexOf(deviceName);
+    //     if (idx != -1) {
+    //         this->m_tmpui->m_midiPanel->mappingTable->setConnectionStatus(false);
+    //         qDebug() << "New port selected (lambda)." << "Starting new receiver for:" << deviceName;
+    //         m_midiListener->startListeningTo(deviceName);
+    //         currentPortName = deviceName;
+    //     } else {
+    //         emit sigLogMessage(QString("[Tried to connect to unknown device %1]").arg(deviceName));
+    //     }
+    // });
+    //
+    //
+    // connect(m_tmpui, &EXColorSelectorDock::sigMixFromColorsButtonPressed,
+    //     this, [this]() {
+    //         size_t activePresetN = m_colorPresets->m_activePreset;
+    //         if (activePresetN>7) { qDebug() << "Error: activePreset out of range"; }
+    //         else {
+    //             auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
+    //             activePreset->m_mixFromGradients = false;
+    //         }
+    //     }
+    // );
+    //
+    // connect(m_tmpui, &EXColorSelectorDock::sigMixFromGradientsButtonPressed,
+    //     this, [this]() {
+    //         size_t activePresetN = m_colorPresets->m_activePreset;
+    //         if (activePresetN>7) { qDebug() << "Error: activePreset out of range"; }
+    //         else {
+    //             auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
+    //             activePreset->m_mixFromGradients = true;
+    //         }
+    //     }
+    // );
+    //
+    // m_mixer->connectChannelPlane(m_ui->m_plane);
+    // m_settingsState->connectChannelPlane(m_ui->m_plane);
+    //
+    // connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, m_ui->m_plane, [this]() {
+    //     EXSettingsState::instance()->applySettingsToPlane(this->m_ui->m_plane);
+    // });
+    //
+    //
+    // connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, this, [this]() {
+    //     this->m_ui->updateSliders();
+    // });
+    // connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, [this]() {
+    //     this->m_ui->updateSliders();
+    // });
+
+
+    //################################################################################
+    //##  Initialization of variables
+    //################################################################################
+
+    this->currentPorts = m_midiListener->availableInputPorts();
+    // Try to connect to first available port
+    if (!currentPorts.isEmpty()) {
+        this->currentPortName = currentPorts[0];
+        qDebug() << "Initializing EXActionbus." << "Starting new receiver for:" << currentPortName;
+        m_midiListener->startListeningTo(currentPortName);
+        emit sigInputPortsChanged(currentPorts);
+    } else {
+        this->currentPortName = "";
+    }
+    m_tmpui->m_midiPanel->onPortSelected();
+    //
+    // this->portRefreshTimer = new QTimer(this);
+    // connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
+    // portRefreshTimer->start(2000);
+
+
+    m_tmpui->m_midiPanel->loadSettings();
 }
 
 void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
@@ -216,7 +295,7 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
         m_midiListener->startListeningTo(currentPortName);
         emit sigInputPortsChanged(currentPorts);
     }
-
+    m_ui->m_midiPanel->onPortsAvailable();
 
     portRefreshTimer = new QTimer(this);
     connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
@@ -228,7 +307,7 @@ void EXActionBus::onRefreshMidiPorts() {
 
     if (newPorts != currentPorts) {
         currentPorts = newPorts;
-        m_ui->m_midiPanel->mappingTable->setAvailablePorts(currentPorts);  // e.g. update dropdown
+        m_ui->m_midiPanel->onPortsAvailable(); // midiPanel fetches available ports from EXActionBus
     }
 
     const QString portName = m_ui->m_midiPanel->mappingTable->desiredPort();
@@ -237,12 +316,10 @@ void EXActionBus::onRefreshMidiPorts() {
         int index = currentPorts.indexOf(portName);
         if (index != -1) {
             if (portName != currentPortName) {
-                // m_midiListener->openPort(index);
                 qDebug() << "Refreshing Midi ports." << "Starting new receiver for:" << portName;
                 m_midiListener->startListeningTo(portName);
                 currentPortName = portName;
-                m_ui->m_midiPanel->mappingTable->setConnectionStatus(true);
-                //logPanel->appendLine(QString("[Auto-connected to %1]").arg(portName));
+                m_ui->m_midiPanel->onPortSelected(); // midiPanel fetches currentPortName from EXActionBus
                 emit sigLogMessage(QString("[Auto-connected to port %1]").arg(portName));
             }
         } else {
@@ -250,7 +327,6 @@ void EXActionBus::onRefreshMidiPorts() {
         }
     } else {
         if (!currentPortName.isEmpty()) {
-            // m_midiListener->closePort();
             qDebug() << "Closing Midi Receiver";
             m_midiListener->stopListening();
             currentPortName.clear();

@@ -52,9 +52,9 @@ public:
     LogPanelWidget* logPanel;
     QDockWidget* logDock;
 
-    QStringList currentPorts;
-    QString currentPortName;
-    QTimer* portRefreshTimer;
+    // QStringList currentPorts;
+    // QString currentPortName;
+    // QTimer* portRefreshTimer;
 
     QList<MappingEntry> mappings;
 };

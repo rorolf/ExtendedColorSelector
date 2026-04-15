@@ -53,9 +53,9 @@ EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
     mainLayout->addWidget(logPanel);
     // logDock->hide();
     //
-    currentPorts = EXActionBus::instance()->m_midiListener->availableInputPorts();
-    mappingTable->setAvailablePorts(currentPorts);
-    currentPortName = mappingTable->currentPortName();
+    // currentPorts = EXActionBus::instance()->m_midiListener->availableInputPorts();
+    // mappingTable->setAvailablePorts(currentPorts);
+    // currentPortName = mappingTable->currentPortName();
 
     // connect(mappingTable, &MappingTableWidget::portSelected, this, [this](const QString& portName) {
     //     int idx = mappingTable->availablePorts().indexOf(portName);
@@ -70,7 +70,7 @@ EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
     // });
 
 
-    loadSettings();
+    // loadSettings();
 }
 
 EXMIDIPanelWidget::~EXMIDIPanelWidget() {
@@ -83,12 +83,13 @@ void EXMIDIPanelWidget::loadSettings()
 
     pendingReconnectPortName = settings.value("selectedPort").toString();
 
-    // No device is selected yet — just populate list
+    // No device is selected yet, just populate the list
+    const QStringList currentPorts = EXActionBus::instance()->currentPorts;
     mappingTable->setPortList(currentPorts);
+
 
     QString savedPort = settings.value("selectedPort").toString();
     mappingTable->setDesiredPort(savedPort);
-    mappingTable->setConnectionStatus(false);
 
     mappingTable->addRowsFromSettings(settings);
 

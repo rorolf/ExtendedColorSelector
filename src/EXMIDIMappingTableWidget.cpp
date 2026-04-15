@@ -351,15 +351,19 @@ QStringList MappingTableWidget::availablePorts()
     return currentPorts;
 }
 
-void MappingTableWidget::setAvailablePorts(const QStringList& ports)
+void MappingTableWidget::setPortList(const QStringList& ports)
 {
     currentPorts = ports;
     portCombo->blockSignals(true);
     portCombo->clear();
     portCombo->addItems(ports);
     portCombo->blockSignals(false);
+}
 
-    bool resetDesiredPortName = true;
+void MappingTableWidget::setAvailablePorts(const QStringList& ports)
+{
+    this->setPortList(ports);
+    bool resetDesiredPortName = !this->desiredPortName.isEmpty();
     for (auto device : this->currentPorts) {
         if (device == this->desiredPortName) {
             resetDesiredPortName = false;
