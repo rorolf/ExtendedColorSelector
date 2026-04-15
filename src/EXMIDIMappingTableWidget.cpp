@@ -88,6 +88,7 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 }
 
 void MappingTableWidget::overwriteWithMappings(const QList<MappingEntry>& entries) {
+    //Bug: What if there is too many or too few entries?
     int k = 0;
     for (const MappingEntry& entry : entries) {
         this->overwriteMappingRow(k++, entry);
@@ -107,8 +108,19 @@ void MappingTableWidget::addMappingRow(const MappingEntry& entry = MappingEntry:
 }
 
 bool MappingTableWidget::overwriteMappingRow(int rowIndex, const MappingEntry& entry) {
-    if (table->rowCount() > rowIndex+1) return false;
+    if (rowIndex >= table->rowCount()) {
+        qDebug() << "Error: settings index" << rowIndex << "Out of bounds!";
+        return false;
+    };
 
+    qDebug() << "Overwriting settings for row" << QString::number(rowIndex)
+            << EXMappedMidiActionToString(entry.mappedAction)
+            << midiEventTypeToString(entry.eventType)
+            << QString::number(entry.eventCode)
+            << inputBehaviorToString(entry.inputBehavior)
+            << QString::number(entry.threshold)
+            << QString::number(entry.hysteresis)
+    ;
     QComboBox* maComboBox = mappedActionComboBox(entry.mappedAction);
     QComboBox* evTComboBo = eventTypeComboBox(entry.eventType);
     QSpinBox* mEvCSpinBox = midiEventCodeSpinBox(entry.eventCode);
