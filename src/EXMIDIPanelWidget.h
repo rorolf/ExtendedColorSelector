@@ -28,7 +28,6 @@ public:
 public Q_SLOTS:
     void onPortsAvailable();
     void onPortSelected();
-    void onMidiMessage(const MidiEvent& evt);
     void onError(const QString& message);
     void toggleLogVisibility(bool checked);
     void onLogCheckboxToggled(bool checked);

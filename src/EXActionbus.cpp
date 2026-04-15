@@ -87,16 +87,17 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     MappingTableWidget* mappingTableCapture = m_tmpui->m_midiPanel->mappingTable;
     connect(m_midiListener, &MidiListener::sigNowListeningTo, mappingTableCapture, &MappingTableWidget::onMidiDeviceChanged);
 
-    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
+
     connect(m_midiListener, &MidiListener::sigErrorOccurred, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onError);
     connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
         logPanelCapture->onMidiMessage(evt);
     });
 
-
     connect(this, &EXActionBus::sigLogMessage, logPanelCapture, [logPanelCapture](const QString& message) {
         logPanelCapture->appendLine(message);
     });
+
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, this, &EXActionBus::onMidiMessage);
 
     // //TODO: maybe add signal/slot for setting connection status
     // connect(m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& deviceName) {
@@ -225,7 +226,7 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     //TODO: send only to UI directly, UI decides how and where to send the messages
     connect(this, &EXActionBus::sigInputPortsChanged, m_ui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
 
-    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, m_ui->m_midiPanel, &EXMIDIPanelWidget::onMidiMessage);
+
     connect(m_midiListener, &MidiListener::sigErrorOccurred, m_ui->m_midiPanel, &EXMIDIPanelWidget::onError);
     connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
         logPanelCapture->onMidiMessage(evt);
@@ -234,6 +235,8 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     connect(this, &EXActionBus::sigLogMessage, logPanelCapture, [logPanelCapture](const QString& message) {
         logPanelCapture->appendLine(message);
     });
+
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, this, &EXActionBus::onMidiMessage);
 
     //TODO: maybe add signal/slot for setting connection status
     connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& deviceName) {

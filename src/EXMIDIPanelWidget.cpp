@@ -142,19 +142,6 @@ void EXMIDIPanelWidget::onPortSelected()
     this->mappingTable->setDesiredPort(portName);
 }
 
-void EXMIDIPanelWidget::onMidiMessage(const MidiEvent& evt)
-{
-    // auto [inputType, value] = m_mapper->mapMidiEvent(evt);
-    // if (std::signbit(value)==0) {
-    //     switch (inputType) {
-    //         case InputBehavior::Knob: break;
-    //         case InputBehavior::Button: break;
-    //         case InputBehavior::Switch: break;
-    //     }
-    // }
-}
-
-
 void EXMIDIPanelWidget::onError(const QString& message)
 {
     QMessageBox::critical(this, "MIDI Error", message);
