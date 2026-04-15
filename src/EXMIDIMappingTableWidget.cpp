@@ -13,7 +13,6 @@
 #include <qsettings.h>
 
 #include "EXMIDIMappingTableWidget.h"
-#include "EXMIDIMapper_PresetControl.h"
 #include "EXMIDIMappingEntry.h"
 #include "EXMIDIEvent.h"
 
@@ -79,9 +78,6 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
     connect(showLogCheckbox, &QCheckBox::toggled, this, &MappingTableWidget::sigShowLogToggled);
     bottomRow->addWidget(showLogCheckbox);
 
-
-    // bottomRow->addWidget(portCombo);
-    // bottomRow->addWidget(connectionStatusLabel);
 
     bottomRow->addStretch();
     layout->addLayout(bottomRow);

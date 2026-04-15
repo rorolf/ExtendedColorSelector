@@ -13,6 +13,7 @@
 #include "EXMIDIEvent.h"
 #include "EXMIDIMapper_PresetControl.h"
 //#include "EXMIDIPanelWidget.h"
+#include "EXMIDIListener.h"
 #include "EXColorMixState.h"
 #include "EXColorPresetStore.h"
 #include "EXSettingsState.h"

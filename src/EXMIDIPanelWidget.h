@@ -15,10 +15,7 @@
 
 #include "EXMIDILogPanelWidget.h"
 #include "EXMIDIMappingTableWidget.h"
-#include "EXMIDIListener.h"
 #include "EXMIDIEvent.h"
-#include "EXMIDIMappingEntry.h"
-#include "EXMIDIMapper_PresetControl.h"
 
 class EXMIDIPanelWidget : public QWidget
 {
@@ -40,23 +37,11 @@ public:
     void loadSettings();
     void saveSettings();
 
-    //MidiListener* m_midiListener;
-    //EXMIDIMapperPresetControl* m_mapper;
-
-    // void tryAutoConnectToDesiredPort();
-    // void refreshMidiPorts();
-
     MappingTableWidget* mappingTable;
     QString pendingReconnectPortName;
 
     LogPanelWidget* logPanel;
     QDockWidget* logDock;
-
-    // QStringList currentPorts;
-    // QString currentPortName;
-    // QTimer* portRefreshTimer;
-
-    // QList<MappingEntry> mappings;
 };
 
 typedef KisSharedPtr<EXMIDIPanelWidget> EXMIDIPanelWidgetSP;

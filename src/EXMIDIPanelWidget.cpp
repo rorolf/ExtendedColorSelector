@@ -23,8 +23,6 @@ EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
     mappingTable = new MappingTableWidget(this);
-    //setCentralWidget(mappingTable);
-    //resize(500, 400);
     this->setMinimumSize(500, 400);
     this->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     setWindowTitle("Qt6 MIDI Listener");
@@ -37,40 +35,8 @@ EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
     // connect(mappingTable, &MappingTableWidget::showLogToggled, this, &EXMIDIPanelWidget::onLogCheckboxToggled);
     // connect(mappingTable, &MappingTableWidget::mappingsEdited, this, &EXMIDIPanelWidget::onMappingsEdited);
 
-
-
     logPanel = new LogPanelWidget();
-
-    // logDock = new QDockWidget("MIDI Log");
-    //logDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    // logDock->setTitleBarWidget(new QWidget());
-    // logDock->setAllowedAreas(Qt::RightDockWidgetArea);
-    // logDock->setMinimumWidth(logDock->parentWidget()->minimumWidth());
-    // logDock->setMaximumWidth(logDock->parentWidget()->maximumWidth());
-    // logDock->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-    // logDock->setWidget(logPanel);
-    // addDockWidget(Qt::RightDockWidgetArea, logDock);
     mainLayout->addWidget(logPanel);
-    // logDock->hide();
-    //
-    // currentPorts = EXActionBus::instance()->m_midiListener->availableInputPorts();
-    // mappingTable->setAvailablePorts(currentPorts);
-    // currentPortName = mappingTable->currentPortName();
-
-    // connect(mappingTable, &MappingTableWidget::portSelected, this, [this](const QString& portName) {
-    //     int idx = mappingTable->availablePorts().indexOf(portName);
-    //     if (idx != -1) {
-    //         m_midiListener->openPort(idx);
-    //         currentPortName = portName;
-    //         logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
-    //         mappingTable->setConnectionStatus(true);
-    //     } else {
-    //         mappingTable->setConnectionStatus(false);
-    //     }
-    // });
-
-
-    // loadSettings();
 }
 
 EXMIDIPanelWidget::~EXMIDIPanelWidget() {
