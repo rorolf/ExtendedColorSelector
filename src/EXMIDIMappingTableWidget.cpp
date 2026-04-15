@@ -323,18 +323,6 @@ void MappingTableWidget::emptyRow(int row)
 }
 
 
-
-
-void MappingTableWidget::setPortList(const QStringList& ports)
-{
-    // portCombo->blockSignals(true);
-    // portCombo->clear();
-    // portCombo->addItems(ports);
-    // portCombo->blockSignals(false);
-
-    this->setAvailablePorts(ports);
-}
-
 QString MappingTableWidget::currentPortName() const
 {
     return portCombo->currentText();
