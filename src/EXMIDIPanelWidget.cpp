@@ -143,21 +143,16 @@ void EXMIDIPanelWidget::onLogCheckboxToggled(bool checked)
     logDock->setVisible(checked);
 }
 
-void EXMIDIPanelWidget::onPortsAvailable(const QStringList& allPorts) {
-    this->currentPorts = allPorts;
-    mappingTable->setAvailablePorts(currentPorts);
-    mappingTable->setCurrentPortIndex(0);
+void EXMIDIPanelWidget::onPortsAvailable() {
+    const QStringList allPorts = EXActionBus::instance()->currentPorts;
+    mappingTable->setAvailablePorts(allPorts);
 }
 
-void EXMIDIPanelWidget::onPortSelected(const QString& portName)
+void EXMIDIPanelWidget::onPortSelected()
 {
-    int index = currentPorts.indexOf(portName);
-    if (index != -1) {
-        //m_midiListener->openPort(index);
-        currentPortName = portName;
-        logPanel->appendLine(QString("[Connected to port %1]").arg(portName));
-        mappingTable->setConnectionStatus(true);
-    }
+    const QString portName = EXActionBus::instance()->currentPortName;
+    logPanel->appendLine(QString("[Connecting to port %1]").arg(portName));
+    this->mappingTable->setDesiredPort(portName);
 }
 
 void EXMIDIPanelWidget::onMidiMessage(const MidiEvent& evt)

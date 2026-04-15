@@ -29,8 +29,8 @@ public:
     ~EXMIDIPanelWidget();
 
 public Q_SLOTS:
-    void onPortsAvailable(const QStringList& allPorts);
-    void onPortSelected(const QString& portName);
+    void onPortsAvailable();
+    void onPortSelected();
     void onMidiMessage(const MidiEvent& evt);
     void onError(const QString& message);
     void toggleLogVisibility(bool checked);
