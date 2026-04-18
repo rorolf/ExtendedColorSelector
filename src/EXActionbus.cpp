@@ -99,19 +99,12 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     connect(m_midiListener, &MidiListener::sigMidiMessageArrived, this, &EXActionBus::onMidiMessage);
 
-    // //TODO: maybe add signal/slot for setting connection status
-    // connect(m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& deviceName) {
-    //     int idx = currentPorts.indexOf(deviceName);
-    //     if (idx != -1) {
-    //         this->m_tmpui->m_midiPanel->mappingTable->setConnectionStatus(false);
-    //         qDebug() << "New port selected (lambda)." << "Starting new receiver for:" << deviceName;
-    //         m_midiListener->startListeningTo(deviceName);
-    //         currentPortName = deviceName;
-    //     } else {
-    //         emit sigLogMessage(QString("[Tried to connect to unknown device %1]").arg(deviceName));
-    //     }
-    // });
-    //
+    connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigMappingsEdited, this, [this, mappingTableCapture]() {
+        QVector<MappingEntry> NewMappings = mappingTableCapture->collectMappingsFromTable();
+        this->m_mapper->setMappings(NewMappings);
+        qDebug() << "EXMIDIMapperPresetControl: Updated mappings";
+    });
+
     //
     // connect(m_tmpui, &EXColorSelectorDock::sigMixFromColorsButtonPressed,
     //     this, [this]() {
