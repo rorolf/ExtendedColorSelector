@@ -69,6 +69,7 @@ MappingTableWidget::MappingTableWidget(QWidget* parent)
 
         this->addMappingRow(entry);
     }
+    emit sigMappingsEdited(this->collectMappingsFromTable());
 
     layout->addWidget(table);
 
@@ -89,12 +90,15 @@ void MappingTableWidget::overwriteWithMappings(const QList<MappingEntry>& entrie
     for (const MappingEntry& entry : entries) {
         this->overwriteMappingRow(k++, entry);
     }
+
+    emit sigMappingsEdited(this->collectMappingsFromTable());
 }
 
 void MappingTableWidget::overwriteWithMappings(const QList<std::tuple<int, MappingEntry>>& entries) {
     for (auto[index, entry] : entries) {
         this->overwriteMappingRow(index, entry);
     }
+    emit sigMappingsEdited(this->collectMappingsFromTable());
 }
 void MappingTableWidget::addMappingRow(const MappingEntry& entry = MappingEntry::EmptyMappingEntry())
 {
@@ -322,8 +326,6 @@ void MappingTableWidget::emptyRow(int row)
         hysteresisSpinbox->setValue(nullEntry.hysteresis);
         actionComboBox->blockSignals(false);
     }
-
-    emit sigMappingChanged(row);
 }
 
 

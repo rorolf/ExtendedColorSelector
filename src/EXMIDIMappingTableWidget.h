@@ -65,7 +65,6 @@ public:
 Q_SIGNALS:
     void sigShowLogToggled(bool enabled);
     void sigPortSelected(const QString& name);
-    void sigMappingChanged(int row);
     void sigMappingsEdited(const QVector<MappingEntry>&);
 
 public Q_SLOTS:
