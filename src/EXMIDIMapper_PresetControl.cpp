@@ -9,62 +9,64 @@
 #include <qobjectdefs.h>
 
 static inline int clamp0_127(int v) { return qBound(0, v, 127); }
-typedef std::tuple<InputBehavior, int> MappedMidiEvent;
 
+    // EXActionBus decides how to propagate signals
 MappedMidiEvent EXMIDIMapperPresetControl::mapMidiEvent(const MidiEvent& ev)
 {
-    // Expect ev to have: ev.eventTypeIndex (or similar), ev.code, ev.value 0..127.
-    // If your MidiEvent uses different names, adapt here in one place.
-    const MidiEventType evType = ev.type;  // e.g., 0 = CC
-    const int code   = ev.code;            // controller number
     const int value  = clamp0_127(ev.value);
 
+    MappedMidiEvent mmEvt;
     for (const auto& e : m_mappings) {
-        if (e.eventType != evType) continue;
-        if (e.eventCode != code) continue;
 
         if (e.matchesEvent(ev)) {
             switch (e.inputBehavior) {
-                case InputBehavior::Knob:   return {InputBehavior::Knob, processKnob(e, value)};   break;
-                case InputBehavior::Button: return {InputBehavior::Button, processButton(e, value)}; break;
-                case InputBehavior::Switch: return {InputBehavior::Switch, processSwitch(e, value)}; break;
+                case InputBehavior::Knob:   mapKnobEvent(mmEvt, e, value);   break;
+                case InputBehavior::Button: mapButtonEvent(mmEvt, e, value); break;
+                case InputBehavior::Switch: mapSwitchEvent(mmEvt, e, value); break;
                 default: break;
             };
+            return mmEvt;
         }
     }
-    return {InputBehavior::Button,-1};
+    return mmEvt;
 }
 
-int EXMIDIMapperPresetControl::processKnob(const MappingEntry& e, int value)
+void EXMIDIMapperPresetControl::mapKnobEvent(MappedMidiEvent& mappedEvent, const MappingEntry& e, const int value)
 {
     // if (e.mapsToKnob()) {
     //     emit sigKnobTurned(e.deviceIndex(), value);
     // }
-    return value;
+    mappedEvent.mappedAction = e.mappedAction;
+    mappedEvent.value = value;
+    mappedEvent.ignoreEvent = false;
 }
 
-int EXMIDIMapperPresetControl::processButton(const MappingEntry& e, int value)
+void EXMIDIMapperPresetControl::mapButtonEvent(MappedMidiEvent& mappedEvent, const MappingEntry& e, const int value)
 {
     auto k = keyFor(e);
     auto& st = m_state[k];
     const bool nowActive = value >= e.threshold;
     const bool wasActive = st.latched;
+
+    qDebug() << " Before: Button pressed with:" << value << "; it had been active:" << wasActive << ", and now:" << nowActive;
+
+    mappedEvent.mappedAction = e.mappedAction;
+    mappedEvent.value = (int)nowActive;
     if (wasActive != nowActive){
         st.latched = nowActive;
         // if (e.mapsToPad()) {
         //     emit sigPadPressed(e.deviceIndex(), st.latched);
         // }
-        return (int)nowActive;
+        mappedEvent.ignoreEvent = false;
     } else {
-        return -1;
+        mappedEvent.ignoreEvent = true;
     }
 }
 
-int EXMIDIMapperPresetControl::processSwitch(const MappingEntry& e, int value)
+void EXMIDIMapperPresetControl::mapSwitchEvent(MappedMidiEvent& mappedEvent, const MappingEntry& e, const int value)
 {
-    // if (!m_bus) return;
     auto k = keyFor(e);
-    auto& st = m_state[k]; // default-init if new
+    auto& st = m_state[k];
 
     const int threshold = e.threshold;
     const int hysteresis = qMin(threshold-1, e.hysteresis); // deadband, must not span out of signal range
@@ -81,13 +83,21 @@ int EXMIDIMapperPresetControl::processSwitch(const MappingEntry& e, int value)
 
     // Detect upward crossing
     if (isResponsive && isAboveThreshold) {
-        st.latched = !st.latched;  // toggle
+        st.latched = !st.latched;
         st.responsive = false;     // ignore small signal variations in case of noise
-        // m_bus->emitValue<bool>(e.mappedAction, st.latched);
         // if (e.mapsToPad()) {
         //     emit sigPadPressed(e.deviceIndex(), st.latched);
         // }
-        return (int)st.latched;
+
+        // QString switchStateMsg;
+        // if (st.latched) { switchStateMsg = "Switch ON"; } else { switchStateMsg = "Switch OFF"; }
+        // qDebug() << "New event of switch:" << switchStateMsg;
+        mappedEvent.ignoreEvent = false;
+    } else {
+        // QString switchStateMsg;
+        // if (st.latched) { switchStateMsg = "Switch ON"; } else { switchStateMsg = "Switch OFF"; }
+        // qDebug() << "Repeat event of switch:" << switchStateMsg;
+        mappedEvent.ignoreEvent = true;
     }
 
     if (!isResponsive && significantlyBelow) {
@@ -95,13 +105,14 @@ int EXMIDIMapperPresetControl::processSwitch(const MappingEntry& e, int value)
     }
 
     st.lastValue = value;
-
-    return std::copysign((int)st.latched, -1);
+    mappedEvent.mappedAction = e.mappedAction;
+    mappedEvent.value = (int)st.latched;
 }
 
-
-
-
+void EXMIDIMapperPresetControl::setMappings(const QVector<MappingEntry>& newMappings) {
+    m_mappings = newMappings;
+    m_state.clear();
+}
 
 
 

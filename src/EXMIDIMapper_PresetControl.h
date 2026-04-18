@@ -10,9 +10,15 @@
 #include <QVector>
 #include "EXMIDIMappingEntry.h"
 #include "EXMIDIEvent.h"
+#include <QDebug>
 
-
-typedef std::tuple<InputBehavior, int> MappedMidiEvent;
+struct MappedMidiEvent
+{
+    public:
+        EXMappedMidiAction mappedAction = EXMappedMidiAction::None;
+        int value = -1;
+        bool ignoreEvent = true;
+};
 
 // Minimal, self-contained mapping engine that owns mappings and emits to ActionBus.
 class EXMIDIMapperPresetControl
@@ -20,7 +26,7 @@ class EXMIDIMapperPresetControl
     public:
         explicit EXMIDIMapperPresetControl() {}
 
-        void setMappings(const QVector<MappingEntry>& m) { m_mappings = m; m_state.clear(); }
+        void setMappings(const QVector<MappingEntry>& m);
 
         // return -1
         MappedMidiEvent mapMidiEvent(const MidiEvent& ev);
@@ -38,13 +44,16 @@ class EXMIDIMapperPresetControl
         static Key keyFor(const MappingEntry& e) { return qMakePair((int)e.eventType, (int)e.eventCode); }
 
         // redundant wqith mappingentry::processInput
-        int processKnob(const MappingEntry& e, int value);
-        int processButton(const MappingEntry& e, int value);
-        int processSwitch(const MappingEntry& e, int value);
+        void mapKnobEvent(MappedMidiEvent& mappedValue, const MappingEntry& e, const int value);
+        void mapButtonEvent(MappedMidiEvent& mappedValue, const MappingEntry& e, const int value);
+        void mapSwitchEvent(MappedMidiEvent& mappedValue, const MappingEntry& e, const int value);
 
     public Q_SIGNAL:
         void sigKnobTurned(int knob, int value);
-        void sigPadPressed(int pad, bool value);
+        void sigPadPressed(int pad, bool isPressed);
+
+    // public Q_SLOTS:
+    //     void onMappingsUpdated(const QVector<MappingEntry>& newMappings);
 
     private:
         QVector<MappingEntry> m_mappings;

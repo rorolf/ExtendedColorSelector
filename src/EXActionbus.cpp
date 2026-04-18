@@ -9,6 +9,7 @@
 #include "EXMIDIEvent.h"
 #include "EXMIDIListener.h"
 #include "EXMIDIMapper_PresetControl.h"
+#include "EXMIDIMappingEntry.h"
 #include "EXMIDIMappingTableWidget.h"
 #include <qglobal.h>
 
@@ -349,12 +350,17 @@ void EXActionBus::onPortSelected(const QString& portName)
 
 void EXActionBus::onMidiMessage(const MidiEvent& evt)
 {
-    auto [inputType, value] = m_mapper->mapMidiEvent(evt);
-    if (std::signbit(value)==0) {
-        switch (inputType) {
-            case InputBehavior::Knob: break;
-            case InputBehavior::Button: break;
-            case InputBehavior::Switch: break;
+    MappedMidiEvent mmEvt = m_mapper->mapMidiEvent(evt);
+    // negative values indicate no action needs to be taken (e.g. button ist still being pressed)
+    if (mmEvt.ignoreEvent || mmEvt.mappedAction == EXMappedMidiAction::None) {
+        // qDebug() << "MidiEvent ignored:" << EXMappedMidiActionToString(mmEvt.mappedAction) << QString("(%1)").arg(mmEvt.value);
+    } else {
+        int deviceIndex = MidiActionDeviceIndex(mmEvt.mappedAction);
+        if (MidiActionMapsToKnob(mmEvt.mappedAction)) {
+            emit sigKnobTurned(deviceIndex, mmEvt.value);
+        }
+        else if (MidiActionMapsToPad(mmEvt.mappedAction)) {
+            emit sigPadPressed(deviceIndex, mmEvt.value);
         }
     }
 }
