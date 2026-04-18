@@ -5,6 +5,7 @@
 
 
 #include "EXColorMixState.h"
+#include "EXColorModel.h"
 #include "EXColorPresetStore.h"
 #include "EXSettingsState.h"
 #include "EXUtils.h"
@@ -291,9 +292,13 @@ void EXColorMixState::onDisplayConfigChanged()
 
 void EXColorMixState::onColorPresetChanged(int newPresetIndex)
 {
+    qDebug() << "EXColorMixState fired onColorPresetChanged";
     EXColorPresetStore* store = EXColorPresetStore::instance();
     EXColorPreset* newPreset = &store->m_colorMixPresets[newPresetIndex];
-    m_colorModel = newPreset->m_colorModel;
+    ColorModelId newColorModel = newPreset->m_colorModel->id();
+    this->setColorModel(newColorModel);
+    // TODO: Find out which KoColorSpace to use
+    //this->setColorSpace()
     m_mixIngredientColors = newPreset->m_ingredientMixColors;
     // m_mixFromGradients = nextPreset.m_mixFromGradients;
     // TODO: copy Gradients over

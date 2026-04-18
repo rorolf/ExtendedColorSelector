@@ -42,6 +42,7 @@ class EXActionBus : public QObject, public KisShared
         void onMidiMessage(const MidiEvent& evt);
         void onRefreshMidiPorts();
         void onPortSelected(const QString& portName);
+        void onKritaBaseColorChanged(const QVector3D& newlyPickedColor);
 
     Q_SIGNALS:
         void sigLogMessage(const QString& message) const;

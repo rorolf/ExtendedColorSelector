@@ -54,6 +54,10 @@ public:
     void enterEvent(QEvent *event) override;
     void leaveEvent(QEvent *event) override;
 
+    //TODO report preset name instead
+    int selectedPreset() const;
+    int selectedMixChannel() const;
+
 private:
     friend class EXActionBus;
 
@@ -87,12 +91,16 @@ private:
 
     EXActionBus* m_actionBus;
 
+    void loadColorsFromPreset(int newPreset);
+
 Q_SIGNALS:
     void sigMixFromColorsButtonPressed();
     void sigMixFromGradientsButtonPressed();
 
 public Q_SLOTS:
     void onColorSpaceSelected(const KoColorSpace *colorSpace);
+    // TODO: switch to String-based setter
+    void onNewPresetSelected(int activePreset);
 };
 
 #endif // EXTENDEDCOLORSELECTORDOCK_H

@@ -7,9 +7,11 @@
 #include <kis_icon_utils.h>
 #include <qtabwidget.h>
 
+#include "EXColorMixState.h"
 #include "EXColorModel.h"
 #include "EXColorSelectorDock.h"
 #include "EXActionbus.h"
+#include "EXColorPresetStore.h"
 #include "EXMIDIPanelWidget.h"
 
 EXColorSelectorDock::EXColorSelectorDock()
@@ -260,8 +262,14 @@ EXColorSelectorDock::EXColorSelectorDock()
         m_colorMixState->setColorSpace(customColorSpace);
     }
 
-    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, m_plane, [this]() {
+    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, m_plane, [this](ColorModelId newClrModel) {
         m_settingsState->applySettingsToPlane(m_plane);
+        int newIndex = m_colorSpaceSelector2->findData(newClrModel);
+        if (newIndex>=0) {
+            m_colorSpaceSelector2->blockSignals(true);
+            m_colorSpaceSelector2->setCurrentIndex(newIndex);
+            m_colorSpaceSelector2->blockSignals(false);
+        }
     });
 
     updateSliders();
@@ -303,6 +311,18 @@ void EXColorSelectorDock::unsetCanvas()
     m_portableSelector->setCanvas(nullptr);
 }
 
+
+int EXColorSelectorDock::selectedPreset() const {
+    // TODO: report QString instead
+    return this->m_presetSelector->currentIndex();
+}
+
+int EXColorSelectorDock::selectedMixChannel() const {
+    int clrPatch = this->m_selectedColorPatchWidget;
+    return clrPatch - (int)(clrPatch > 4);
+}
+
+
 void EXColorSelectorDock::enterEvent(QEvent *event)
 {
     QDockWidget::enterEvent(event);
@@ -322,6 +342,29 @@ void EXColorSelectorDock::onColorSpaceSelected(const KoColorSpace *colorSpace)
         m_colorMixState->setColorSpace(colorSpace);
         settings.customColorSpace = colorSpace;
         settings.writeAll();
+    }
+}
+
+void EXColorSelectorDock::onNewPresetSelected(int activePreset) {
+    int currentlySelectedPreset = this->m_presetSelector->currentIndex();
+    if (activePreset != currentlySelectedPreset) {
+        this->m_presetSelector->blockSignals(true);
+        this->m_presetSelector->setCurrentIndex(activePreset);
+        this->m_presetSelector->blockSignals(false);
+        this->loadColorsFromPreset(activePreset);
+    }
+}
+
+void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
+    EXColorPresetStore* presets = EXColorPresetStore::instance();
+    EXColorPreset* newPreset = &presets->m_colorMixPresets[activePreset];
+
+    for (size_t k=0; k<m_colorPatchWidgets.size(); ++k) {
+        if (k == 4) continue;
+        int k2 = k - (size_t)(k>4);
+        QColor newClr = EXColorMixState::instance()->toQColor(newPreset->m_ingredientMixColors[k2]);
+        qDebug() << "Loaded new Color for ColorPatch" << k << "from color" << k2;
+        m_colorPatchWidgets[k]->onColorSelected(newClr);
     }
 }
 

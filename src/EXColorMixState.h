@@ -74,6 +74,7 @@ Q_SIGNALS:
 public Q_SLOTS:
     void onDisplayConfigChanged();
     void onColorPresetChanged(int newPresetIndex); //when switching between presets and changing presets themselves
+    // a specific onIngredientColorChanged does not exist
     void onIngredientColorWeightChanged(int weightIndex, float value);
 
 private:

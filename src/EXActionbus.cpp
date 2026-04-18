@@ -44,6 +44,8 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
     LogPanelWidget* logPanelCapture = m_tmpui->m_midiPanel->logPanel;
 
+    connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, &EXActionBus::onKritaBaseColorChanged);
+
     connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture](QVector3D newClr) {
         QColor newQClr = mixerCapture->toQColor(newClr);
         uiCapture->m_colorPatchPopup->updateColor(newQClr);
@@ -297,6 +299,26 @@ void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
     portRefreshTimer = new QTimer(this);
     connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
     portRefreshTimer->start(2000);
+}
+
+void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
+
+    qDebug() << "ActionBus fired onKritaBaseColorChanged";
+    //Option A: No responsive UI element had been selected
+    int selectedClrPatch = this->m_tmpui->selectedMixChannel();
+    if (selectedClrPatch < 0) { return; }
+    qDebug() << "ColorPatch selected:" << selectedClrPatch;
+    // Option B a Clr Patch has been selected; active color preset will now be modified
+    //TODO: make selection instead
+    int activePreset = this->m_tmpui->selectedPreset();
+    m_colorPresets->m_activePreset = activePreset;
+
+    qDebug() << "Preset selected:" << activePreset;
+
+    m_colorPresets->m_colorMixPresets[activePreset].m_ingredientMixColors[selectedClrPatch] = newlyPickedColor;
+    m_tmpui->onNewPresetSelected(activePreset);
+    //TODO: without informing EXChannelPlane, this whacks the color selector
+    m_mixer->onColorPresetChanged(activePreset);
 }
 
 void EXActionBus::onRefreshMidiPorts() {
