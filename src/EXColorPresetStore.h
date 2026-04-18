@@ -62,9 +62,6 @@ public:
 
 Q_SIGNALS:
     void sigColorPresetChanged();        // overwrites EXColorState's active preset
-    // system looks wonky
-    void sigMixColorChannelInFocus();    // prevents EXColorState from updating
-    void sigMixColorChannelOutOfFocus(); // reenables EXColorState updates
 
 public Q_SLOTS:
     void onPresetSelected(int newPreset);
