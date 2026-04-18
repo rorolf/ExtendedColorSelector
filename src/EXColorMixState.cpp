@@ -156,7 +156,9 @@ void EXColorMixState::setCanvas(KisCanvas2 *canvas)
 
 void EXColorMixState::setPrimaryChannelValue(float value)
 {
-    m_color[m_primaryChannelIndex] = value;
+    // m_color[m_primaryChannelIndex] = value;
+    QVector3D newClr = m_color;
+    newClr[m_primaryChannelIndex] = value;
     setColor(m_color);
 }
 
