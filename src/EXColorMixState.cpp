@@ -91,6 +91,7 @@ void EXColorMixState::mixColors()
     }
     ExtendedUtils::saturateColor(out_color);
 
+    qDebug() << "Color changed from" << m_color << "to" << out_color;
     if (m_color != out_color)
     {
         m_color = out_color;

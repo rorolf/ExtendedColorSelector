@@ -53,7 +53,7 @@ EXColorSelectorDock::EXColorSelectorDock()
                         ColorModelId::Lab, ColorModelId::Lch, ColorModelId::Oklab, ColorModelId::Oklch})
     {
         QString modelName = EXColorModel::modelNameFromId(clrid);
-        m_colorSpaceSelector2->addItem(modelName, QVariant(clrid));
+        m_colorSpaceSelector2->addItem(modelName, clrid);
     }
 
     presetSpaceLayout->addWidget(m_presetSelector);
@@ -201,6 +201,8 @@ EXColorSelectorDock::EXColorSelectorDock()
             SIGNAL(colorSpaceChanged(const KoColorSpace *)),
             this,
             SLOT(onColorSpaceSelected(const KoColorSpace *)));
+
+
 
     m_plane = new EXChannelPlane(this);
     m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)m_settingsState->globalSettings.currentColorModel));

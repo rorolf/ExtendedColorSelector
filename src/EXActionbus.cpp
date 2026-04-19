@@ -6,6 +6,8 @@
 #include "EXActionbus.h"
 #include "EXColorMixState.h"
 #include "EXColorMixerDock.h"
+#include "EXColorModel.h"
+#include "EXColorPresetStore.h"
 #include "EXMIDIEvent.h"
 #include "EXMIDIListener.h"
 #include "EXMIDIMapper_PresetControl.h"
@@ -41,6 +43,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     EXColorSelectorDock* uiCapture = m_tmpui;
     EXColorMixStateSP mixerCapture = m_mixer;
+    QComboBox* presetSelector = uiCapture->m_presetSelector;
     QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
     LogPanelWidget* logPanelCapture = m_tmpui->m_midiPanel->logPanel;
 
@@ -54,18 +57,27 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
         uiCapture, [this, uiCapture, cSS](int newIndex) {
             Q_UNUSED(uiCapture);
-            auto data = cSS->itemData(newIndex);
-            if (data.isValid())
-            {
-                ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
-                this->m_mixer->setColorModel(newClrId);
-            }
+            // auto data = cSS->itemData(newIndex);
+            // if (data.isValid())
+            // {
+            //     ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
+            //     this->m_mixer->setColorModel(newClrId);
+            // }
+            ColorModelId newClrId = cSS->currentData().value<ColorModelId>();
+            this->m_mixer->setColorModel(newClrId);
         }
     );
 
-    //TODO: Change ColorModel when ColorSpace changes
-    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [uiCapture, cSS](const KoColorSpace *colorSpace) {
+    connect(presetSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int newIndex) {
+        qDebug() << "A new preset was selected via UI";
+        m_colorPresets->onPresetSelected(newIndex);
+        m_mixer->onColorPresetChanged(newIndex);
+    });
 
+    //TODO: Change ColorModel when ColorSpace changes
+    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [this, uiCapture, cSS](const KoColorSpace *colorSpace) {
+
+        qDebug() << "EXColorMixState reported that the color space changed";
         auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
         ColorModelId newClrId = newColorModel->id();
         delete newColorModel;
@@ -79,6 +91,23 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
                 cSS->blockSignals(false);
             }
         }
+        m_colorPresets->onColorSpaceSelected(newClrId);
+        //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
+    });
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, uiCapture, [this, uiCapture, cSS](const ColorModelId newClrId) {
+
+        ColorModelId oldClrId = uiCapture->m_colorSpaceSelector2->currentData().value<ColorModelId>();
+        if (newClrId != oldClrId) {
+            int newIndex = cSS->findData(newClrId);
+            if (newIndex >= 0)
+            {
+                cSS->blockSignals(true);
+                cSS->setCurrentIndex(newIndex);
+                cSS->blockSignals(false);
+            }
+        }
+        m_colorPresets->onColorSpaceSelected(newClrId);
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
 

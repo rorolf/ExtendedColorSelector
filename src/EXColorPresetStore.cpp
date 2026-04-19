@@ -80,6 +80,8 @@ EXColorPresetStore::EXColorPresetStore()
 
 void EXColorPresetStore::writeSettings()
 {
+    qDebug() << "Saving Preset Settings...";
+
     m_configGroup.writeEntry("EXColorPresets" ".activePreset", m_activePreset);
 
     for (size_t k1=0; k1<8; ++k1)
