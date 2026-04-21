@@ -24,7 +24,7 @@ public:
 
 Q_SIGNALS:
     void sigClicked();
-    //void sigNewColorSelected(QColor &color);
+    void sigIsSelected(bool isSelected);
 
 public Q_SLOTS:
     void onColorSelected(QColor& color);

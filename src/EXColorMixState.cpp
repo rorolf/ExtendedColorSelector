@@ -76,6 +76,10 @@ void EXColorMixState::setColorModel(ColorModelId model)
     this->mixColors();
 }
 
+void EXColorMixState::blockUpdates(bool blockUpdates) {
+    this->m_blockColorSync = blockUpdates;
+}
+
 void EXColorMixState::mixColors()
 {
     // TODO: allow multiple mixing behaviors
@@ -222,7 +226,10 @@ KoColor EXColorMixState::toKoColor(const QVector3D &color) const
 
 QColor EXColorMixState::toQColor(const QVector3D &color) const
 {
+    if (!m_dri) return QColor::fromRgb(0,0,0);
+    qDebug() << "Converting to KoColor...";
     auto koClr = this->toKoColor(color);
+    qDebug() << "Displayrenderer creates QColor...";
     return m_dri->toQColor(koClr);
 }
 
@@ -238,6 +245,7 @@ QColor EXColorMixState::qColor() const
 
 void EXColorMixState::setColor(const QVector3D &color)
 {
+    if (m_blockColorSync) { return; }
     m_kritaBaseColor = color;
     Q_EMIT sigKritaBaseColorChanged(m_kritaBaseColor);
     this->mixColors();
@@ -296,13 +304,12 @@ void EXColorMixState::onDisplayConfigChanged()
 void EXColorMixState::onColorPresetChanged(int newPresetIndex)
 {
     qDebug() << "EXColorMixState fired onColorPresetChanged";
-    EXColorPresetStore* store = EXColorPresetStore::instance();
-    EXColorPreset* newPreset = &store->m_colorMixPresets[newPresetIndex];
-    ColorModelId newColorModel = newPreset->m_colorModel->id();
+    EXColorPreset newPreset = EXColorPresetStore::instance()->activePreset();
+    ColorModelId newColorModel = newPreset.m_colorModel->id();
     this->setColorModel(newColorModel);
     // TODO: Find out which KoColorSpace to use
     //this->setColorSpace()
-    m_mixIngredientColors = newPreset->m_ingredientMixColors;
+    m_mixIngredientColors = newPreset.m_ingredientMixColors;
     // m_mixFromGradients = nextPreset.m_mixFromGradients;
     // TODO: copy Gradients over
 
@@ -311,6 +318,7 @@ void EXColorMixState::onColorPresetChanged(int newPresetIndex)
 }
 void EXColorMixState::onIngredientColorWeightChanged(int weightIndex, float value)
 {
+    qDebug() << "Changing mixIngredientColorWeight" << weightIndex << "to" << value;
     m_mixIngredientColorWeights[weightIndex] = value;
     mixColors();
 }

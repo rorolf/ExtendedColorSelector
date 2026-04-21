@@ -61,6 +61,8 @@ public:
     void connectChannelSlider(EXChannelSlider *slider);
     void clearConnectedChannelSliders();
 
+    void blockUpdates(bool blockUpdates);
+
     // additional
     void mixColors();
 

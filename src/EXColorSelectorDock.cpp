@@ -85,6 +85,7 @@ EXColorSelectorDock::EXColorSelectorDock()
                         this->m_selectedColorPatchWidget = k;
                         this->m_colorPatchWidgets[k]->m_selected = true;
                         this->m_colorPatchWidgets[k]->update();
+                        emit sigColorPatchWidgetSelected(k);
                     } else if (curSelect != k) {
                         // app already has a focus; do nothing
                     } else {
@@ -92,6 +93,7 @@ EXColorSelectorDock::EXColorSelectorDock()
                         this->m_selectedColorPatchWidget = -1;
                         this->m_colorPatchWidgets[k]->m_selected = false;
                         this->m_colorPatchWidgets[k]->update();
+                        emit sigColorPatchWidgetSelected(-1);
                     }
                 }
             );
@@ -101,10 +103,12 @@ EXColorSelectorDock::EXColorSelectorDock()
             connect(EXColorMixState::instance(), &EXColorMixState::sigKritaBaseColorChanged,
                 this, [this, k](QVector3D newClr) {
                     Q_UNUSED(this);
-                    QColor newQClr = EXColorMixState::instance()->toQColor(newClr);
-                    this->m_colorPatchWidgets[k]->m_color = newQClr;
-                    this->m_colorPatchWidgets[k]->update();
-                    // newChannelWidget->onColorSelected(newQClr);
+                    if (this->m_selectedColorPatchWidget < 0) {
+                        QColor newQClr = EXColorMixState::instance()->toQColor(newClr);
+                        this->m_colorPatchWidgets[k]->m_color = newQClr;
+                        this->m_colorPatchWidgets[k]->update();
+                        // newChannelWidget->onColorSelected(newQClr);
+                    }
                 }
             );
         }
@@ -133,15 +137,6 @@ EXColorSelectorDock::EXColorSelectorDock()
     mixerModeButtonGroup->addButton(mixFromGradientsButton, 1);
 
     m_mixResultColorPatch = new EXColorPatchWidget();
-
-    connect(EXColorMixState::instance(), &EXColorMixState::sigColorChanged,
-        this, [this](QVector3D newClrV) {
-            Q_UNUSED(this);
-            auto newClr = EXColorMixState::instance()->toQColor(newClrV);
-            this->m_mixResultColorPatch->m_color = newClr;
-            this->m_mixResultColorPatch->update();
-        }
-    );
 
     mixSideLayout->addWidget(mixFromColorsButton);
     mixSideLayout->addWidget(mixFromGradientsButton);
@@ -264,16 +259,6 @@ EXColorSelectorDock::EXColorSelectorDock()
         m_colorMixState->setColorSpace(customColorSpace);
     }
 
-    connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, m_plane, [this](ColorModelId newClrModel) {
-        m_settingsState->applySettingsToPlane(m_plane);
-        int newIndex = m_colorSpaceSelector2->findData(newClrModel);
-        if (newIndex>=0) {
-            m_colorSpaceSelector2->blockSignals(true);
-            m_colorSpaceSelector2->setCurrentIndex(newIndex);
-            m_colorSpaceSelector2->blockSignals(false);
-        }
-    });
-
     updateSliders();
     connect(m_colorMixState.data(), &EXColorMixState::sigColorModelChanged, this, &EXColorSelectorDock::updateSliders);
     connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, &EXColorSelectorDock::updateSliders);
@@ -353,20 +338,28 @@ void EXColorSelectorDock::onNewPresetSelected(int activePreset) {
         this->m_presetSelector->blockSignals(true);
         this->m_presetSelector->setCurrentIndex(activePreset);
         this->m_presetSelector->blockSignals(false);
-        this->loadColorsFromPreset(activePreset);
     }
+    this->loadColorsFromPreset(activePreset);
 }
 
 void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
-    EXColorPresetStore* presets = EXColorPresetStore::instance();
-    EXColorPreset* newPreset = &presets->m_colorMixPresets[activePreset];
+    EXColorPreset newPreset = EXColorPresetStore::instance()->activePreset();
 
+    qDebug() << "Loading Colors from Preset" << activePreset;
     for (size_t k=0; k<m_colorPatchWidgets.size(); ++k) {
         if (k == 4) continue;
         int k2 = k - (size_t)(k>4);
-        QColor newClr = EXColorMixState::instance()->toQColor(newPreset->m_ingredientMixColors[k2]);
-        qDebug() << "Loaded new Color for ColorPatch" << k << "from color" << k2;
-        m_colorPatchWidgets[k]->onColorSelected(newClr);
+        qDebug() << "Loading Color" << k2 << "into ColorPatchWidget" << k;
+        QVector3D ingClr = newPreset.m_ingredientMixColors[k2];
+        qDebug() << "Converting (" << ingClr[0] << ingClr[1] << ingClr[2] << ") to QColor...";
+        QColor newClr = EXColorMixState::instance()->toQColor(ingClr);
+        // float clrX = newPreset->m_ingredientMixColors[k2][0];
+        // float clrY = newPreset->m_ingredientMixColors[k2][1];
+        // float clrZ = newPreset->m_ingredientMixColors[k2][2];
+        // qDebug() << "Loaded new Color for ColorPatch" << k << "from color" << k2 << QString("(%1,%2,%3)").arg(clrX).arg(clrY).arg(clrZ);
+        // m_colorPatchWidgets[k]->onColorSelected(newClr);
+        m_colorPatchWidgets[k]->m_color = newClr;
+        m_colorPatchWidgets[k]->update();
     }
 }
 

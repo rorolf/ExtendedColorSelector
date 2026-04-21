@@ -9,6 +9,7 @@
 #include <QVector3D>
 #include <QBitArray>
 #include <array>
+#include <QTimer>
 
 #include <kconfiggroup.h>
 
@@ -47,15 +48,11 @@ class EXColorPresetStore : public QObject, public KisShared
 
 public:
     EXColorPresetStore();
-    ~EXColorPresetStore() override = default;
+    ~EXColorPresetStore();
 
     KConfigGroup m_configGroup;
 
-    int m_activePreset;
-    std::array<EXColorPreset, 8> m_colorMixPresets;
-
-    int m_selectedColorMixChannel;
-
+    const EXColorPreset& activePreset();
     void writeSettings();
 
     static EXColorPresetStore *instance();
@@ -65,13 +62,15 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void onPresetSelected(int newPreset);
-    void onMixColorChannelSelected(int newChannel);
     void onColorSpaceSelected(ColorModelId newClrModel);
     void onGradientModeSelected(bool mixFromGradients);
-    void onMixColorSelected(int clrChannelIndex, QVector3D newClr);
+    void onMixColorChanged(int clrChannelIndex, QVector3D newClr);
 
 private:
-
+    int m_activePreset;
+    std::array<EXColorPreset, 8> m_colorMixPresets;
+    QTimer* saveSettingsDeferrer;
+    bool presetsChanged = false;
 };
 
 typedef KisSharedPtr<EXColorPresetStore> EXColorPresetStoreSP;

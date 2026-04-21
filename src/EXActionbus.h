@@ -25,7 +25,6 @@ class EXActionBus : public QObject, public KisShared
     public:
         EXActionBus(QObject* parent = nullptr);
         ~EXActionBus() {};
-        void initializeAndConnectTo(EXColorMixerDock* ui);
         void initializeAndConnectToEXS(EXColorSelectorDock* ui);
         static EXActionBus* instance();
 
@@ -56,6 +55,7 @@ class EXActionBus : public QObject, public KisShared
 
     private:
         QTimer* portRefreshTimer;
+        void startSignalLogging();
 
 };
 

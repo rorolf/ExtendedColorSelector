@@ -8,6 +8,7 @@
 #include "EXColorMixerDock.h"
 #include "EXColorModel.h"
 #include "EXColorPresetStore.h"
+#include "EXColorSelectorDock.h"
 #include "EXMIDIEvent.h"
 #include "EXMIDIListener.h"
 #include "EXMIDIMapper_PresetControl.h"
@@ -31,10 +32,10 @@ EXActionBus::EXActionBus(QObject*parent)
     , m_ui(nullptr)
     , m_tmpui(nullptr)
     //, m_midiUi(ui->m_midiPanel)
-    , m_midiListener(new MidiListener())
+    , m_midiListener(new MidiListener)
     , m_mapper(new EXMIDIMapperPresetControl)
     , m_mixer(EXColorMixState::instance())
-    , m_colorPresets(new EXColorPresetStore)
+    , m_colorPresets(EXColorPresetStore::instance())
     , m_settingsState(EXSettingsState::instance())
 {}
 
@@ -50,8 +51,12 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, &EXActionBus::onKritaBaseColorChanged);
 
     connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture](QVector3D newClr) {
-        QColor newQClr = mixerCapture->toQColor(newClr);
-        uiCapture->m_colorPatchPopup->updateColor(newQClr);
+        if (uiCapture->selectedMixChannel() < 0) {
+            QColor newQClr = mixerCapture->toQColor(newClr);
+            uiCapture->m_colorPatchPopup->updateColor(newQClr);
+            uiCapture->m_mixResultColorPatch->m_color = newQClr;
+            uiCapture->m_mixResultColorPatch->update();
+        }
     });
 
     connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -72,6 +77,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         qDebug() << "A new preset was selected via UI";
         m_colorPresets->onPresetSelected(newIndex);
         m_mixer->onColorPresetChanged(newIndex);
+        this->m_tmpui->loadColorsFromPreset(newIndex);
     });
 
     //TODO: Change ColorModel when ColorSpace changes
@@ -137,6 +143,12 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         qDebug() << "EXMIDIMapperPresetControl: Updated mappings";
     });
 
+
+    connect(this, &EXActionBus::sigKnobTurned, m_mixer, [this](int deviceIndex, int value) {
+        float newWeight = (float)(value)/(float)(127);
+        this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);
+    });
+
     //
     // connect(m_tmpui, &EXColorSelectorDock::sigMixFromColorsButtonPressed,
     //     this, [this]() {
@@ -196,138 +208,11 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     // connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
     // portRefreshTimer->start(2000);
 
+    startSignalLogging();
 
     m_tmpui->m_midiPanel->loadSettings();
-}
-
-void EXActionBus::initializeAndConnectTo(EXColorMixerDock* ui) {
-    //################################################################################
-    //## Gathering dependencies (Q_Objects)
-    //################################################################################
-
-    //TODO: always capture this isntead?
-    m_ui = ui;
-
-    EXColorMixerDock* uiCapture = m_ui;
-    EXColorMixStateSP mixerCapture = m_mixer;
-    auto cSS = uiCapture->m_colorSpaceSelector;
-    LogPanelWidget* logPanelCapture = m_ui->m_midiPanel->logPanel;
-
-    connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture]() {
-        uiCapture->m_colorPatchPopup->updateColor(mixerCapture->qColor());
-    });
-
-    connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        uiCapture, [this, uiCapture, cSS](int newIndex) {
-            Q_UNUSED(uiCapture);
-            auto data = cSS->itemData(newIndex);
-            if (data.isValid())
-            {
-                ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
-                this->m_mixer->setColorModel(newClrId);
-            }
-        }
-    );
-
-
-    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [uiCapture, cSS](const KoColorSpace *colorSpace) {
-
-        auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
-        ColorModelId newClrId = newColorModel->id();
-        delete newColorModel;
-        ColorModelId oldClrId = static_cast<ColorModelId>(uiCapture->m_colorSpaceSelector->currentData().value<int>());
-        if (newClrId != oldClrId) {
-            int newIndex = cSS->findData(newClrId);
-            if (newIndex >= 0)
-            {
-                cSS->blockSignals(true);
-                cSS->setCurrentIndex(newIndex);
-                cSS->blockSignals(false);
-            }
-        }
-        //m_colorSpaceSelectorButton->setText(colorSpace->name());
-    });
-
-    //TODO: send only to UI directly, UI decides how and where to send the messages
-    connect(this, &EXActionBus::sigInputPortsChanged, m_ui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
-
-
-    connect(m_midiListener, &MidiListener::sigErrorOccurred, m_ui->m_midiPanel, &EXMIDIPanelWidget::onError);
-    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
-        logPanelCapture->onMidiMessage(evt);
-    });
-
-    connect(this, &EXActionBus::sigLogMessage, logPanelCapture, [logPanelCapture](const QString& message) {
-        logPanelCapture->appendLine(message);
-    });
-
-    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, this, &EXActionBus::onMidiMessage);
-
-    //TODO: maybe add signal/slot for setting connection status
-    connect(m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, this, [this](const QString& deviceName) {
-        int idx = currentPorts.indexOf(deviceName);
-        if (idx != -1) {
-            this->m_ui->m_midiPanel->mappingTable->setConnectionStatus(false);
-            qDebug() << "New port selected (lambda)." << "Starting new receiver for:" << deviceName;
-            m_midiListener->startListeningTo(deviceName);
-            currentPortName = deviceName;
-        } else {
-            emit sigLogMessage(QString("[Tried to connect to unknown device %1]").arg(deviceName));
-        }
-    });
-
-
-    connect(m_ui, &EXColorMixerDock::sigMixFromColorsButtonPressed,
-        this, [this]() {
-            size_t activePresetN = m_colorPresets->m_activePreset;
-            auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
-            activePreset->m_mixFromGradients = false;
-        }
-    );
-
-    connect(m_ui, &EXColorMixerDock::sigMixFromGradientsButtonPressed,
-        this, [this]() {
-            size_t activePresetN = m_colorPresets->m_activePreset;
-            auto activePreset = &m_colorPresets->m_colorMixPresets[activePresetN];
-            activePreset->m_mixFromGradients = true;
-        }
-    );
-
-    m_mixer->connectChannelPlane(m_ui->m_plane);
-    m_settingsState->connectChannelPlane(m_ui->m_plane);
-
-    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, m_ui->m_plane, [this]() {
-        EXSettingsState::instance()->applySettingsToPlane(this->m_ui->m_plane);
-    });
-
-
-    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, this, [this]() {
-        this->m_ui->updateSliders();
-    });
-    connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, [this]() {
-        this->m_ui->updateSliders();
-    });
-
-
-    //################################################################################
-    //##  Initialization of variables
-    //################################################################################
-
-    this->currentPorts = m_midiListener->availableInputPorts();
-    if (!currentPorts.isEmpty()) { this->currentPortName = currentPorts[0]; }
-    else { this->currentPortName = ""; }
-    // Try to connect to first available port
-    if (!currentPorts.isEmpty()) {
-        // m_midiListener->openPort(0);
-        qDebug() << "Initializing EXActionbus." << "Starting new receiver for:" << currentPortName;
-        m_midiListener->startListeningTo(currentPortName);
-        emit sigInputPortsChanged(currentPorts);
-    }
-    m_ui->m_midiPanel->onPortsAvailable();
-
-    portRefreshTimer = new QTimer(this);
-    connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
-    portRefreshTimer->start(2000);
+    qDebug() << "Loading initial Colors...";
+    m_tmpui->loadColorsFromPreset(0);
 }
 
 void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
@@ -340,11 +225,13 @@ void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
     // Option B a Clr Patch has been selected; active color preset will now be modified
     //TODO: make selection instead
     int activePreset = this->m_tmpui->selectedPreset();
-    m_colorPresets->m_activePreset = activePreset;
+    // m_colorPresets->m_activePreset = activePreset;
+    m_colorPresets->onPresetSelected(activePreset);
 
     qDebug() << "Preset selected:" << activePreset;
 
-    m_colorPresets->m_colorMixPresets[activePreset].m_ingredientMixColors[selectedClrPatch] = newlyPickedColor;
+    // m_colorPresets->m_colorMixPresets[activePreset].m_ingredientMixColors[selectedClrPatch] = newlyPickedColor;
+    m_colorPresets->onMixColorChanged(selectedClrPatch, newlyPickedColor);
     m_tmpui->onNewPresetSelected(activePreset);
     //TODO: without informing EXChannelPlane, this whacks the color selector
     m_mixer->onColorPresetChanged(activePreset);
@@ -416,6 +303,93 @@ void EXActionBus::onMidiMessage(const MidiEvent& evt)
     }
 }
 
+
+void EXActionBus::startSignalLogging() {
+
+    EXColorSelectorDock* uiCapture = m_tmpui;
+    QComboBox* presetSelector = uiCapture->m_presetSelector;
+    QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
+
+    connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "Krita Base color changed";
+    });
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorChanged, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "Krita mixed color changed";
+    });
+
+    connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "ColorSpaceSelector index changed to" << index;
+    });
+
+    connect(presetSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "PresetSelector index changed to" << index;
+    });
+
+    connect(uiCapture, &EXColorSelectorDock::sigColorPatchWidgetSelected, this, [this](int index) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "ColorPatchWidgetSelected" << index;
+    });
+
+    //TODO: Change ColorModel when ColorSpace changes
+    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal" << "ColorSpaceChanged";
+    });
+
+    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, this, [this](ColorModelId clrId) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "ColormodelChanged" << clrId;
+    });
+
+    connect(m_settingsState.data(), &EXSettingsState::sigSettingsChanged, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "SettingsChanged";
+    });
+
+    connect(this, &EXActionBus::sigInputPortsChanged, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigInputPortsChanged";
+    });
+
+    connect(m_midiListener, &MidiListener::sigNowListeningTo, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigNowListeningTo";
+    });
+
+    connect(m_midiListener, &MidiListener::sigErrorOccurred, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigErrorOccurred";
+    });
+    connect(m_midiListener, &MidiListener::sigMidiMessageArrived, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigMidiMessageArrived";
+    });
+
+    connect(this, &EXActionBus::sigLogMessage, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigLogMessage";
+    });
+
+    connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigMappingsEdited, this, [this]() {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigMappingsEdited";
+    });
+
+    connect(this, &EXActionBus::sigKnobTurned, this, [this](int knob, int value) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigKnobTurned" << knob << "with value:" << value;
+    });
+
+    connect(this, &EXActionBus::sigPadPressed, this, [this](int knob, int value) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigPadPressed" << knob << "with value:" << value;
+    });
+}
 
 
 

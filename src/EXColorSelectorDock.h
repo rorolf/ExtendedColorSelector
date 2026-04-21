@@ -96,6 +96,7 @@ private:
 Q_SIGNALS:
     void sigMixFromColorsButtonPressed();
     void sigMixFromGradientsButtonPressed();
+    void sigColorPatchWidgetSelected(int clrPatchIndex);
 
 public Q_SLOTS:
     void onColorSpaceSelected(const KoColorSpace *colorSpace);
