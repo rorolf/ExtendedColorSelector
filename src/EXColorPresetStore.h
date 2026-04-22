@@ -53,6 +53,7 @@ public:
     KConfigGroup m_configGroup;
 
     const EXColorPreset& activePreset();
+    int activePresetIndex();
     void writeSettings();
 
     static EXColorPresetStore *instance();

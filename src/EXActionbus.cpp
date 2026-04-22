@@ -117,6 +117,12 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
 
+    connect(m_mixer.data(), &EXColorMixState::sigCanvasReady, uiCapture, [this, uiCapture]() {
+        Q_UNUSED(this);
+        int activePreset = m_colorPresets->activePresetIndex();
+        uiCapture->onNewPresetSelected(activePreset);
+    });
+
     connect(this, &EXActionBus::sigInputPortsChanged, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
     connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, m_midiListener, [this](QString portName) {
         m_midiListener->startListeningTo(portName);

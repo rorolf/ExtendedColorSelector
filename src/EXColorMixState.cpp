@@ -156,6 +156,7 @@ void EXColorMixState::setCanvas(KisCanvas2 *canvas)
         } else {
             syncFromKrita();
         }
+        emit sigCanvasReady();
     }
 }
 

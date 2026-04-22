@@ -85,6 +85,10 @@ const EXColorPreset& EXColorPresetStore::activePreset() {
     return this->m_colorMixPresets[this->m_activePreset];
 }
 
+int EXColorPresetStore::activePresetIndex() {
+    return this->m_activePreset;
+}
+
 void EXColorPresetStore::writeSettings()
 {
     qDebug() << "Saving Preset Settings...";

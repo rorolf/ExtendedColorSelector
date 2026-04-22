@@ -72,6 +72,7 @@ Q_SIGNALS:
     void sigColorModelChanged(ColorModelId id);
     void sigColorSpaceChanged(const KoColorSpace *colorSpace);
     void sigKritaBaseColorChanged(const QVector3D &color);
+    void sigCanvasReady();
 
 public Q_SLOTS:
     void onDisplayConfigChanged();
