@@ -21,6 +21,7 @@ MidiListener::MidiListener(QObject* parent)
 
 MidiListener::~MidiListener()
 {
+    midiThread->requestInterruption();
     midiThread->quit();
 }
 
@@ -70,6 +71,7 @@ void MidiListener::startListeningTo(const QString& deviceName) {
 
     if (deviceFound && (this->midiThread != nullptr)) {
         qDebug() << "MidiListener quits its thread.";
+        this->midiThread->requestInterruption();
         this->midiThread->quit();
         this->midiThread = nullptr;
     }
@@ -80,6 +82,10 @@ void MidiListener::startListeningTo(const QString& deviceName) {
         MidiThreadReceiver* midiReceiver = new MidiThreadReceiver(nullptr, pmidiInputID);
          // on same thread
         connect(midiThread, &QThread::started, midiReceiver, [midiReceiver](){ midiReceiver->start(); });
+        connect(midiReceiver, &MidiThreadReceiver::sigFinished, midiThread, &QThread::quit);
+        connect(midiReceiver, &MidiThreadReceiver::sigFinished, midiReceiver, &MidiThreadReceiver::deleteLater);
+        connect(midiThread, &QThread::finished, midiThread, &QThread::deleteLater);
+
         // between threads
         connect(midiReceiver, &MidiThreadReceiver::sigMidiMessageArrived, this, &MidiListener::sigMidiMessageArrived, Qt::QueuedConnection);
         // connect(midiReceiver, &MidiThreadReceiver::sigMidiMessageArrived, this, [this](MidiEvent evt) {
@@ -98,6 +104,7 @@ void MidiListener::startListeningTo(const QString& deviceName) {
 void MidiListener::stopListening() {
     if (this->midiThread) {
         qDebug() << "MidiListener stops listening.";
+        midiThread->requestInterruption();
         midiThread->quit();
         midiThread = nullptr;
     } else { qDebug() << "MidiListener had already stopped listening."; }
@@ -125,19 +132,21 @@ void MidiThreadReceiver::start() {
 
     PmEvent midiEventBuffer[1];
     int msgLength;
-    while (true) {
+    while (!QThread::currentThread()->isInterruptionRequested()) {
         PmError pollStatus = Pm_Poll(midiInStream);
 
         if (pollStatus == true) {
             msgLength = Pm_Read(midiInStream, midiEventBuffer, 1);
             if (msgLength > 0) {
                 MidiEvent midiData = MidiEvent::fromPortMidiMessage(midiEventBuffer[0]);
-                // qDebug() << "PortMidi received message:" << midiData.toString();
+                qDebug() << "MidiThreadReceiver" << this->m_randId << "received message:" << midiData.toString();
                 emit sigMidiMessageArrived(midiData);
             }
         }
         QThread::msleep(5);
     }
+    Pm_Close(midiInStream);
+    emit sigFinished();
 }
 
 
