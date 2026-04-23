@@ -231,7 +231,7 @@ void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
     qDebug() << "ColorPatch selected:" << selectedClrPatch;
     // Option B a Clr Patch has been selected; active color preset will now be modified
     //TODO: make selection instead
-    int activePreset = this->m_tmpui->selectedPreset();
+    int activePreset = this->m_colorPresets->activePresetIndex();
     // m_colorPresets->m_activePreset = activePreset;
     m_colorPresets->onPresetSelected(activePreset);
 
