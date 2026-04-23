@@ -15,8 +15,8 @@ MidiListener::MidiListener(QObject* parent)
     : QObject(parent)//, midiIn(new RtMidiIn())
     , midiThread(nullptr)
 {
-    QString deviceName = "";
-    this->startListeningTo(deviceName);
+    // QString deviceName = "";
+    // this->startListeningTo(deviceName);
 }
 
 MidiListener::~MidiListener()
