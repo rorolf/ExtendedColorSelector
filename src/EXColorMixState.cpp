@@ -99,6 +99,7 @@ void EXColorMixState::mixColors()
     if (m_color != out_color)
     {
         m_color = out_color;
+        this->sendToKrita();
         Q_EMIT sigColorChanged(m_color);
     }
 }
