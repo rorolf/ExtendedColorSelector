@@ -76,7 +76,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     connect(presetSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int newIndex) {
         qDebug() << "A new preset was selected via UI";
         m_colorPresets->onPresetSelected(newIndex);
-        m_mixer->onColorPresetChanged(newIndex);
+        m_mixer->onColorPresetChanged();
         this->m_tmpui->loadColorsFromPreset(newIndex);
     });
 
@@ -120,6 +120,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     connect(m_mixer.data(), &EXColorMixState::sigCanvasReady, uiCapture, [this, uiCapture]() {
         Q_UNUSED(this);
         int activePreset = m_colorPresets->activePresetIndex();
+        this->m_mixer->onColorPresetChanged();
         uiCapture->onNewPresetSelected(activePreset);
     });
 
@@ -240,7 +241,7 @@ void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
     m_colorPresets->onMixColorChanged(selectedClrPatch, newlyPickedColor);
     m_tmpui->onNewPresetSelected(activePreset);
     //TODO: without informing EXChannelPlane, this whacks the color selector
-    m_mixer->onColorPresetChanged(activePreset);
+    m_mixer->onColorPresetChanged();
 }
 
 void EXActionBus::onRefreshMidiPorts() {

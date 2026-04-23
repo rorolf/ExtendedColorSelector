@@ -302,7 +302,7 @@ void EXColorMixState::onDisplayConfigChanged()
     }
 }
 
-void EXColorMixState::onColorPresetChanged(int newPresetIndex)
+void EXColorMixState::onColorPresetChanged()
 {
     qDebug() << "EXColorMixState fired onColorPresetChanged";
     EXColorPreset newPreset = EXColorPresetStore::instance()->activePreset();

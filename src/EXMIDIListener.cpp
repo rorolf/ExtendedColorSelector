@@ -4,6 +4,7 @@
 #include <QDebug>
 
 #include <QLibrary>
+#include <qnamespace.h>
 #include <qthread.h>
 #include <QDateTime>
 
