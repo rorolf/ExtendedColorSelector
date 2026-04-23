@@ -336,6 +336,7 @@ void EXColorMixState::connectChannelPlane(EXChannelPlane *plane)
     plane->setColorConverter(m_koColorConverter);
     connect(plane, &EXChannelPlane::sigPrimaryChannelValueSelected, this, &EXColorMixState::setPrimaryChannelValue);
     connect(plane, &EXChannelPlane::sigSecondaryChannelsValueSelected, this, &EXColorMixState::setSecondaryChannelValues);
+    //TODO: logic error, needs to send to EXMixColorState, and then mixColors sends to Krita
     connect(plane, &EXChannelPlane::sigValueFinalized, this, &EXColorMixState::sendToKrita);
     connect(this, &EXColorMixState::sigColorChanged, plane, [this, plane](QVector3D color) {
         plane->setColor(color, m_colorModel);
@@ -365,6 +366,7 @@ void EXColorMixState::connectChannelSlider(EXChannelSlider *slider)
     connect(slider->bar(), &EXChannelSliderBar::sigValueChanging, this, [this, colorModel, slider]() {
         setColor(colorModel->transferTo(m_colorModel.data(), slider->colorAtCurrentModel(), m_color));
     });
+    //TODO: logic error
     connect(slider->bar(), &EXChannelSliderBar::sigValueFinalized, this, &EXColorMixState::sendToKrita);
     connect(this, &EXColorMixState::sigColorChanged, slider, [this, slider](QVector3D color) {
         slider->setColor(color, m_colorModel);
