@@ -45,7 +45,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     EXColorSelectorDock* uiCapture = m_tmpui;
     EXColorMixStateSP mixerCapture = m_mixer;
     QComboBox* presetSelector = uiCapture->m_presetSelector;
-    QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
+    QComboBox* cMS = uiCapture->m_colorModelSelector;
     LogPanelWidget* logPanelCapture = m_tmpui->m_midiPanel->logPanel;
 
     connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, &EXActionBus::onKritaBaseColorChanged);
@@ -59,8 +59,8 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         }
     });
 
-    connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged),
-        uiCapture, [this, uiCapture, cSS](int newIndex) {
+    connect(cMS, QOverload<int>::of(&QComboBox::currentIndexChanged),
+        uiCapture, [this, uiCapture, cMS](int newIndex) {
             Q_UNUSED(uiCapture);
             // auto data = cSS->itemData(newIndex);
             // if (data.isValid())
@@ -68,7 +68,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
             //     ColorModelId newClrId = static_cast<ColorModelId>(data.value<int>());
             //     this->m_mixer->setColorModel(newClrId);
             // }
-            ColorModelId newClrId = cSS->currentData().value<ColorModelId>();
+            ColorModelId newClrId = cMS->currentData().value<ColorModelId>();
             this->m_mixer->setColorModel(newClrId);
         }
     );
@@ -81,36 +81,36 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     });
 
     //TODO: Change ColorModel when ColorSpace changes
-    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [this, uiCapture, cSS](const KoColorSpace *colorSpace) {
+    connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [this, uiCapture, cMS](const KoColorSpace *colorSpace) {
 
         qDebug() << "EXColorMixState reported that the color space changed";
         auto newColorModel = ColorModelFactory::fromKoColorSpace(colorSpace);
         ColorModelId newClrId = newColorModel->id();
         delete newColorModel;
-        ColorModelId oldClrId = uiCapture->m_colorSpaceSelector2->currentData().value<ColorModelId>();
+        ColorModelId oldClrId = uiCapture->m_colorModelSelector->currentData().value<ColorModelId>();
         if (newClrId != oldClrId) {
-            int newIndex = cSS->findData(newClrId);
+            int newIndex = cMS->findData(newClrId);
             if (newIndex >= 0)
             {
-                cSS->blockSignals(true);
-                cSS->setCurrentIndex(newIndex);
-                cSS->blockSignals(false);
+                cMS->blockSignals(true);
+                cMS->setCurrentIndex(newIndex);
+                cMS->blockSignals(false);
             }
         }
         m_colorPresets->onColorSpaceSelected(newClrId);
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
 
-    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, uiCapture, [this, uiCapture, cSS](const ColorModelId newClrId) {
+    connect(m_mixer.data(), &EXColorMixState::sigColorModelChanged, uiCapture, [this, uiCapture, cMS](const ColorModelId newClrId) {
 
-        ColorModelId oldClrId = uiCapture->m_colorSpaceSelector2->currentData().value<ColorModelId>();
+        ColorModelId oldClrId = uiCapture->m_colorModelSelector->currentData().value<ColorModelId>();
         if (newClrId != oldClrId) {
-            int newIndex = cSS->findData(newClrId);
+            int newIndex = cMS->findData(newClrId);
             if (newIndex >= 0)
             {
-                cSS->blockSignals(true);
-                cSS->setCurrentIndex(newIndex);
-                cSS->blockSignals(false);
+                cMS->blockSignals(true);
+                cMS->setCurrentIndex(newIndex);
+                cMS->blockSignals(false);
             }
         }
         m_colorPresets->onColorSpaceSelected(newClrId);
@@ -315,7 +315,7 @@ void EXActionBus::startSignalLogging() {
 
     EXColorSelectorDock* uiCapture = m_tmpui;
     QComboBox* presetSelector = uiCapture->m_presetSelector;
-    QComboBox* cSS = uiCapture->m_colorSpaceSelector2;
+    QComboBox* cMS = uiCapture->m_colorModelSelector;
 
     connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, [this]() {
         Q_UNUSED(this);
@@ -327,7 +327,7 @@ void EXActionBus::startSignalLogging() {
         qDebug() << "Signal:" << "Krita mixed color changed";
     });
 
-    connect(cSS, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+    connect(cMS, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         Q_UNUSED(this);
         qDebug() << "Signal:" << "ColorSpaceSelector index changed to" << index;
     });

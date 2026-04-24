@@ -81,7 +81,7 @@ private:
 
 
     QComboBox *m_presetSelector;
-    QComboBox *m_colorSpaceSelector2;
+    QComboBox *m_colorModelSelector;
     int m_selectedColorPatchWidget=-1;
     std::array<EXColorPatchWidget*, 9> m_colorPatchWidgets;
     QButtonGroup *m_mixingModeSelector;

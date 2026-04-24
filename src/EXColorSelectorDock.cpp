@@ -43,22 +43,22 @@ EXColorSelectorDock::EXColorSelectorDock()
         m_presetSelector->addItem("Preset " + QString::number(k+1), QVariant::fromValue(k));
     }
 
-    auto colorSpaceSelectorLabel = new QLabel("ColorSpace:");
+    auto colorModelSelectorLabel = new QLabel("ColorModel:");
 
-    m_colorSpaceSelector2 = new QComboBox(this);
-    m_colorSpaceSelector2->setEditable(false);
+    m_colorModelSelector = new QComboBox(this);
+    m_colorModelSelector->setEditable(false);
 
     for (auto clrid : { ColorModelId::LinearRgb, ColorModelId::Srgb,
                         ColorModelId::Xyz,
                         ColorModelId::Lab, ColorModelId::Lch, ColorModelId::Oklab, ColorModelId::Oklch})
     {
         QString modelName = EXColorModel::modelNameFromId(clrid);
-        m_colorSpaceSelector2->addItem(modelName, clrid);
+        m_colorModelSelector->addItem(modelName, clrid);
     }
 
     presetSpaceLayout->addWidget(m_presetSelector);
-    presetSpaceLayout->addWidget(colorSpaceSelectorLabel);
-    presetSpaceLayout->addWidget(m_colorSpaceSelector2);
+    presetSpaceLayout->addWidget(colorModelSelectorLabel);
+    presetSpaceLayout->addWidget(m_colorModelSelector);
     colorSelectLayout->addLayout(presetSpaceLayout);
 
     // ###########################################################
