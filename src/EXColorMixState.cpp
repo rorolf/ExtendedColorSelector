@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <kis_canvas2.h>
 #include <kis_display_color_converter.h>
 #include <qvector.h>
@@ -11,6 +12,8 @@
 #include "EXUtils.h"
 #include "KoColor.h"
 
+#include <QtGlobal>
+#include <cmath>
 
 static EXColorMixState *s_instance = nullptr;
 
@@ -87,11 +90,19 @@ void EXColorMixState::mixColors()
 
     QVector3D out_color = m_kritaBaseColor;
 
-    for (int k=0; k<8; ++k)
+    QVector3D mixColor = QVector3D(0,0,0);
+    float totalMixWight = 0.0;
+    float finalMixWeight = 0.0;
+    for (size_t k=0; k<m_mixIngredientColors.size(); ++k)
     {
-        QVector3D mix_color = m_mixIngredientColors[k];
-        float mix_weight = m_mixIngredientColorWeights[k];
-        out_color += (mix_color-m_kritaBaseColor)*mix_weight;
+        float mixWeight = m_mixIngredientColorWeights[k];
+        totalMixWight += mixWeight;
+        finalMixWeight = qMax(finalMixWeight, mixWeight);
+        mixColor += m_mixIngredientColors[k]*mixWeight;
+    }
+    if (totalMixWight > 0.005) {
+        mixColor /= totalMixWight;
+        out_color = out_color  +  (mixColor-out_color) * finalMixWeight;
     }
     ExtendedUtils::saturateColor(out_color);
 
