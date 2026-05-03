@@ -48,9 +48,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     m_colorModelSelector = new QComboBox(this);
     m_colorModelSelector->setEditable(false);
 
-    for (auto clrid : { ColorModelId::LinearRgb, ColorModelId::Srgb,
-                        ColorModelId::Xyz,
-                        ColorModelId::Lab, ColorModelId::Lch, ColorModelId::Oklab, ColorModelId::Oklch})
+    for (auto clrid : ColorModelFactory::AllModels)
     {
         QString modelName = EXColorModel::modelNameFromId(clrid);
         m_colorModelSelector->addItem(modelName, clrid);
