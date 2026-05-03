@@ -4,6 +4,3 @@
 [submodule "external/PortMidi"]
 	path = external/PortMidi
 	url = https://github.com/PortMidi/PortMidi
-[submodule "external/rtmidi"]
-	path = external/rtmidi
-	url = https://github.com/thestk/rtmidi
