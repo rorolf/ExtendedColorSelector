@@ -219,7 +219,10 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     m_tmpui->m_midiPanel->loadSettings();
     qDebug() << "Loading initial Colors...";
-    m_tmpui->loadColorsFromPreset(0);
+    m_tmpui->loadColorsFromPreset(m_colorPresets->activePresetIndex());
+    QString currentColorModelName = m_colorPresets->activePreset().m_colorModel->displayName();
+    int cCMIndex = m_tmpui->m_colorModelSelector->findText(currentColorModelName);
+    if (cCMIndex >= 0) { m_tmpui->m_colorModelSelector->setCurrentIndex(cCMIndex); }
 }
 
 void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
