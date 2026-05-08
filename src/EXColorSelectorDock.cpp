@@ -43,7 +43,24 @@ EXColorSelectorDock::EXColorSelectorDock()
         m_presetSelector->addItem("Preset " + QString::number(k+1), QVariant::fromValue(k));
     }
 
-    auto colorModelSelectorLabel = new QLabel("ColorModel:");
+    auto colorModelSelectorLabel = new QLabel("ColorSpace/Model:");
+
+    auto colorSelectorButtonLayout = new QVBoxLayout();
+
+    auto colorSpaceLayout = new QHBoxLayout(this);
+    m_colorSpaceSelectorButton = new KisPopupButton(this);
+    m_colorSpaceSelector = new KisColorSpaceSelector(this);
+    m_colorSpaceSelector->showColorBrowserButton(false);
+    m_useLayerColorSpaceButton = new QPushButton(this);
+    m_useLayerColorSpaceButton->setCheckable(true);
+    m_colorSpaceSelectorButton->setPopupWidget(m_colorSpaceSelector);
+    m_colorSpaceSelectorButton->setMaximumSize(360, 40);
+    m_useLayerColorSpaceButton->setMaximumSize(40, 40);
+    m_colorSpaceSelectorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    colorSpaceLayout->addWidget(m_colorSpaceSelectorButton);
+    colorSpaceLayout->addWidget(m_useLayerColorSpaceButton);
+    colorSelectorButtonLayout->addLayout(colorSpaceLayout);
 
     m_colorModelSelector = new QComboBox(this);
     m_colorModelSelector->setEditable(false);
@@ -54,9 +71,11 @@ EXColorSelectorDock::EXColorSelectorDock()
         m_colorModelSelector->addItem(modelName, clrid);
     }
 
+    colorSelectorButtonLayout->addWidget(m_colorModelSelector);
+
     presetSpaceLayout->addWidget(m_presetSelector);
     presetSpaceLayout->addWidget(colorModelSelectorLabel);
-    presetSpaceLayout->addWidget(m_colorModelSelector);
+    presetSpaceLayout->addLayout(colorSelectorButtonLayout);
     colorSelectLayout->addLayout(presetSpaceLayout);
 
     // ###########################################################
@@ -160,19 +179,6 @@ EXColorSelectorDock::EXColorSelectorDock()
     //################################################################################
     //## original code
     //################################################################################
-
-
-    auto colorSpaceLayout = new QHBoxLayout(this);
-    m_colorSpaceSelectorButton = new KisPopupButton(this);
-    m_colorSpaceSelector = new KisColorSpaceSelector(this);
-    m_colorSpaceSelector->showColorBrowserButton(false);
-    m_useLayerColorSpaceButton = new QPushButton(this);
-    m_useLayerColorSpaceButton->setCheckable(true);
-    m_colorSpaceSelectorButton->setPopupWidget(m_colorSpaceSelector);
-    m_colorSpaceSelectorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    colorSpaceLayout->addWidget(m_colorSpaceSelectorButton);
-    colorSpaceLayout->addWidget(m_useLayerColorSpaceButton);
-    colorSelectLayout->addLayout(colorSpaceLayout);
 
     connect(m_colorMixState.data(), &EXColorMixState::sigColorSpaceChanged, this, [this](const KoColorSpace *colorSpace) {
         if (colorSpace != m_colorSpaceSelector->currentColorSpace()) {
