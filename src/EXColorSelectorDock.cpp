@@ -54,7 +54,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     m_useLayerColorSpaceButton = new QPushButton(this);
     m_useLayerColorSpaceButton->setCheckable(true);
     m_colorSpaceSelectorButton->setPopupWidget(m_colorSpaceSelector);
-    m_colorSpaceSelectorButton->setMaximumSize(360, 40);
+    m_colorSpaceSelectorButton->setMaximumWidth(360);
     m_useLayerColorSpaceButton->setMaximumSize(40, 40);
     m_colorSpaceSelectorButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
