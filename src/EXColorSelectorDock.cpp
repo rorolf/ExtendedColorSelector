@@ -23,8 +23,8 @@ EXColorSelectorDock::EXColorSelectorDock()
     this->setObjectName("EXColorMixerDock");
     m_canvas = nullptr;
 
-    auto colorSelectLayout = new QVBoxLayout();
-    colorSelectLayout->setObjectName("MainLayout");
+    auto colorMixLayout = new QVBoxLayout();
+    colorMixLayout->setObjectName("ColorMixLayout");
 
     m_colorPatchPopup = new EXColorPatchPopup(this);
     // connect(m_colorMixState.data(), &EXColorMixState::sigColorChanged, this, [this]() {
@@ -76,7 +76,7 @@ EXColorSelectorDock::EXColorSelectorDock()
     presetSpaceLayout->addWidget(m_presetSelector);
     presetSpaceLayout->addWidget(colorModelSelectorLabel);
     presetSpaceLayout->addLayout(colorSelectorButtonLayout);
-    colorSelectLayout->addLayout(presetSpaceLayout);
+    colorMixLayout->addLayout(presetSpaceLayout);
 
     // ###########################################################
 
@@ -162,19 +162,12 @@ EXColorSelectorDock::EXColorSelectorDock()
     mixPresetLayout->addLayout(mixChannelLayout);
     mixPresetLayout->addLayout(mixSideLayout);
 
-    colorSelectLayout->addLayout(mixPresetLayout);
+    colorMixLayout->addLayout(mixPresetLayout);
 
     m_midiPanel = new EXMIDIPanelWidget();
     QVBoxLayout* midiLayout = new QVBoxLayout();
     midiLayout->addWidget(m_midiPanel);
     m_tabWidget = new QTabWidget();
-
-
-
-
-
-
-
 
     //################################################################################
     //## original code
@@ -202,6 +195,7 @@ EXColorSelectorDock::EXColorSelectorDock()
             SLOT(onColorSpaceSelected(const KoColorSpace *)));
 
 
+    auto colorSelectLayout = new QVBoxLayout();
 
     m_plane = new EXChannelPlane(this);
     m_plane->setColorModel(ColorModelFactory::fromId((ColorModelId)m_settingsState->globalSettings.currentColorModel));
@@ -239,13 +233,28 @@ EXColorSelectorDock::EXColorSelectorDock()
     colorSelectLayout->addLayout(settingsButtonLayout);
 
     auto colorSelectWidget = new QWidget(this);
+    colorSelectWidget->setMaximumSize(800, 600);
     colorSelectWidget->setLayout(colorSelectLayout);
+
+    m_colorSelectorPupupButton = new KisPopupButton(this);
+    m_colorSelectorPupupButton->setText("Select Color");
+    m_colorSelectorPupupButton->setPopupWidget(colorSelectWidget);
+    m_colorSelectorPupupButton->setMinimumWidth(200);
+    m_colorSelectorPupupButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    colorMixLayout->addWidget(m_colorSelectorPupupButton);
+
+    auto colorMixWidget = new QWidget(this);
+    colorMixWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    colorMixWidget->setLayout(colorMixLayout);
+
+
 
     //################################################################################
     //## Added TabWidget logic
     //################################################################################
 
-    m_tabWidget->addTab(colorSelectWidget, "ColorSelector");
+    m_tabWidget->addTab(colorMixWidget, "ColorSelector");
     m_tabWidget->addTab(m_midiPanel, "Midi");
 
     setWidget(m_tabWidget);

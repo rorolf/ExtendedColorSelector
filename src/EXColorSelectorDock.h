@@ -79,6 +79,7 @@ private:
 
     void updateSliders();
 
+    KisPopupButton* m_colorSelectorPupupButton;
 
     QComboBox *m_presetSelector;
     QComboBox *m_colorModelSelector;
