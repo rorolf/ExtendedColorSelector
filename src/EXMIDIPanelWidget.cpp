@@ -36,7 +36,12 @@ EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
     // connect(mappingTable, &MappingTableWidget::mappingsEdited, this, &EXMIDIPanelWidget::onMappingsEdited);
 
     logPanel = new LogPanelWidget();
+    logPanel->hide();
     mainLayout->addWidget(logPanel);
+
+    connect(mappingTable, &MappingTableWidget::sigShowLogToggled, this, [this](bool checked){
+        this->onLogCheckboxToggled(checked);
+    });
 }
 
 EXMIDIPanelWidget::~EXMIDIPanelWidget() {
