@@ -102,6 +102,11 @@ EXColorSelectorDock::EXColorSelectorDock()
                         this->m_selectedColorPatchWidget = k;
                         this->m_colorPatchWidgets[k]->m_selected = true;
                         this->m_colorPatchWidgets[k]->update();
+
+                        for (auto rButton : m_mixingModeSelector->buttons()) {
+                            rButton->setDisabled(false);
+                        }
+
                         emit sigColorPatchWidgetSelected(k);
                     } else if (curSelect != k) {
                         // app already has a focus; do nothing
@@ -110,6 +115,11 @@ EXColorSelectorDock::EXColorSelectorDock()
                         this->m_selectedColorPatchWidget = -1;
                         this->m_colorPatchWidgets[k]->m_selected = false;
                         this->m_colorPatchWidgets[k]->update();
+
+                        for (auto rButton : m_mixingModeSelector->buttons()) {
+                            rButton->setDisabled(true);
+                        }
+
                         emit sigColorPatchWidgetSelected(-1);
                     }
                 }
@@ -138,25 +148,27 @@ EXColorSelectorDock::EXColorSelectorDock()
     QButtonGroup *mixerModeButtonGroup = new QButtonGroup(this);
     m_mixingModeSelector = mixerModeButtonGroup;
 
-    QRadioButton *mixFromColorsButton = new QRadioButton(this);
-    mixFromColorsButton->setText("Color Palette");
-    mixFromColorsButton->setChecked(true);
+    QRadioButton *mixFromRawColorButton = new QRadioButton(this);
+    mixFromRawColorButton->setText("Raw Color Channel");
+    mixFromRawColorButton->setChecked(true);
+    mixFromRawColorButton->setDisabled(true);
 
-    connect(mixFromColorsButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromColorsButtonPressed);
+    connect(mixFromRawColorButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromColorsButtonPressed);
 
-    QRadioButton *mixFromGradientsButton = new QRadioButton(this);
-    mixFromGradientsButton->setText("Gradient Palette");
-    mixFromColorsButton->setChecked(false);
+    QRadioButton *mixFromGradientButton = new QRadioButton(this);
+    mixFromGradientButton->setText("Gradient Color Channel");
+    mixFromGradientButton->setChecked(false);
+    mixFromGradientButton->setDisabled(true);
 
-    connect(mixFromGradientsButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromGradientsButtonPressed);
+    connect(mixFromGradientButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromGradientsButtonPressed);
 
-    mixerModeButtonGroup->addButton(mixFromColorsButton, 0);
-    mixerModeButtonGroup->addButton(mixFromGradientsButton, 1);
+    mixerModeButtonGroup->addButton(mixFromRawColorButton, 0);
+    mixerModeButtonGroup->addButton(mixFromGradientButton, 1);
 
     m_mixResultColorPatch = new EXColorPatchWidget();
 
-    mixSideLayout->addWidget(mixFromColorsButton);
-    mixSideLayout->addWidget(mixFromGradientsButton);
+    mixSideLayout->addWidget(mixFromRawColorButton);
+    mixSideLayout->addWidget(mixFromGradientButton);
     mixSideLayout->addWidget(m_mixResultColorPatch);
 
     mixPresetLayout->addLayout(mixChannelLayout);
