@@ -29,7 +29,6 @@ public Q_SLOTS:
     void onPortsAvailable();
     void onPortSelected();
     void onError(const QString& message);
-    void toggleLogVisibility(bool checked);
     void onLogCheckboxToggled(bool checked);
 
 public:
@@ -40,7 +39,6 @@ public:
     QString pendingReconnectPortName;
 
     LogPanelWidget* logPanel;
-    QDockWidget* logDock;
 };
 
 typedef KisSharedPtr<EXMIDIPanelWidget> EXMIDIPanelWidgetSP;

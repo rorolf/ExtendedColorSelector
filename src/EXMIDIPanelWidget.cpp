@@ -116,18 +116,9 @@ void EXMIDIPanelWidget::saveSettings()
     qDebug() << "Saving Mappings to File concluded";
 }
 
-
-void EXMIDIPanelWidget::toggleLogVisibility(bool checked)
-{
-    if (checked)
-        logDock->show();
-    else
-        logDock->hide();
-}
-
 void EXMIDIPanelWidget::onLogCheckboxToggled(bool checked)
 {
-    logDock->setVisible(checked);
+    logPanel->setVisible(checked);
 }
 
 void EXMIDIPanelWidget::onPortsAvailable() {
