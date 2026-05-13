@@ -23,7 +23,6 @@ EXMIDIPanelWidget::EXMIDIPanelWidget(QWidget* parent)
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
     mappingTable = new MappingTableWidget(this);
-    this->setMinimumSize(500, 400);
     this->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     setWindowTitle("Qt6 MIDI Listener");
 
