@@ -23,6 +23,8 @@
 #include "EXColorModel.h"
 #include "EXKoColorConverter.h"
 
+#include "EXGradient.h"
+
 
 class EXColorMixState : public QObject, public KisShared
 {
@@ -90,8 +92,7 @@ private:
 
     int m_useGradientColorIndex = -1; // <0 if no gradient to be used
     float mixGradientColorPosition;
-    std::array<std::vector<QVector3D>,8> mixGradientColors;
-    std::array<std::vector<float>,8> mixGradientStopPositions;
+    std::array<EXColorGradient, 8> m_mixGradients;
 
     quint32 m_primaryChannelIndex;
     ColorModelSP m_colorModel;

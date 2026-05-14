@@ -323,6 +323,7 @@ void EXColorMixState::onColorPresetChanged()
     // TODO: Find out which KoColorSpace to use
     //this->setColorSpace()
     m_mixIngredientColors = newPreset.m_ingredientMixColors;
+    m_mixGradients = newPreset.m_mixGradients;
     // m_mixFromGradients = nextPreset.m_mixFromGradients;
     // TODO: copy Gradients over
 
