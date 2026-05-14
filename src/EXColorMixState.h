@@ -91,6 +91,7 @@ private:
     std::array<float, 8> m_mixIngredientColorWeights;
 
     int m_useGradientColorIndex = -1; // <0 if no gradient to be used
+    std::array<bool, 8> m_useGradients;
     float mixGradientColorPosition;
     std::array<EXColorGradient, 8> m_mixGradients;
 
