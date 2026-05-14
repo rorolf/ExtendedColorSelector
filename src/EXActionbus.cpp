@@ -80,6 +80,30 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         this->m_tmpui->loadColorsFromPreset(newIndex);
     });
 
+    connect(uiCapture, &EXColorSelectorDock::sigMixFromColorsButtonPressed, this, [this, uiCapture]() {
+        Q_UNUSED(this);
+        int selectedChannel = uiCapture->selectedMixChannel();
+        if (selectedChannel >= 0) m_colorPresets->onGradientModeSelected(selectedChannel, false);
+    });
+
+    connect(uiCapture, &EXColorSelectorDock::sigMixFromGradientsButtonPressed, this, [this, uiCapture]() {
+        Q_UNUSED(this);
+        int selectedChannel = uiCapture->selectedMixChannel();
+        if (selectedChannel >= 0) m_colorPresets->onGradientModeSelected(selectedChannel, true);
+    });
+
+    connect(uiCapture, &EXColorSelectorDock::sigColorPatchWidgetSelected, this, [this, uiCapture](int newChannel) {
+        Q_UNUSED(this);
+        bool useGradient = false;
+        if (newChannel >= 0) useGradient = m_colorPresets->activePreset().m_useGradients[newChannel];
+        uiCapture->m_mixFromRawColorButton->setChecked(!useGradient);
+        uiCapture->m_mixFromRawColorButton->blockSignals(false);
+        uiCapture->m_mixFromGradientButton->blockSignals(true);
+        uiCapture->m_mixFromGradientButton->setChecked(useGradient);
+        uiCapture->m_mixFromGradientButton->blockSignals(false);
+    });
+
+
     //TODO: Change ColorModel when ColorSpace changes
     connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [this, uiCapture, cMS](const KoColorSpace *colorSpace) {
 

@@ -84,14 +84,14 @@ private:
     QVector3D m_color;
     QVector3D m_kritaBaseColor; // updates check whether this is equal to kritaBaseColor or mixResultColor
     QVector3D m_mixResultColor;
+
     std::array<QVector3D, 8> m_mixIngredientColors;
-    //float m_kritaBaseColorWeight; // implicitly set to a fixed value
     std::array<float, 8> m_mixIngredientColorWeights;
-    // bool m_mixFromGradients;
-    // std::array<std::vector<QVector3D>,7> mixGradientColors;
-    // std::array<std::vector<float>,7> mixGradientStopPositions;
-    // std::array<float,7> mixGradientColorPositions;
-    // float mixGradientWeight;
+
+    int m_useGradientColorIndex = -1; // <0 if no gradient to be used
+    float mixGradientColorPosition;
+    std::array<std::vector<QVector3D>,8> mixGradientColors;
+    std::array<std::vector<float>,8> mixGradientStopPositions;
 
     quint32 m_primaryChannelIndex;
     ColorModelSP m_colorModel;

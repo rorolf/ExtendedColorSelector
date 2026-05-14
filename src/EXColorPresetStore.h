@@ -8,8 +8,9 @@
 #include <QVector2D>
 #include <QVector3D>
 #include <QBitArray>
-#include <array>
 #include <QTimer>
+#include <QtGlobal>
+#include <array>
 
 #include <kconfiggroup.h>
 
@@ -20,6 +21,7 @@
 #include <qvector3d.h>
 
 #include "EXColorModel.h"
+#include "EXGradient.h"
 
 
 class EXColorPreset
@@ -32,11 +34,9 @@ class EXColorPreset
         // TODO: How to replace the colorspace pointer?
         //const KoColorSpace *m_currentColorSpace;
 
-        bool m_mixFromGradients; // length 8
         std::array<QVector3D, 8> m_ingredientMixColors;
-        //std::array<std::vector<QVector3D>, 7> m_ingredientMixGradients;
-        //std::array<std::vector<float>, 7> m_ingredientGradientStopPositions;
-        //float m_mixFromGradientStrength;
+        std::array<bool, 8> m_useGradients;
+        std::array<EXColorGradient, 8> m_mixGradients;
 
     private:
 };
@@ -64,7 +64,7 @@ Q_SIGNALS:
 public Q_SLOTS:
     void onPresetSelected(int newPreset);
     void onColorSpaceSelected(ColorModelId newClrModel);
-    void onGradientModeSelected(bool mixFromGradients);
+    void onGradientModeSelected(int channel, bool mixFromGradients);
     void onMixColorChanged(int clrChannelIndex, QVector3D newClr);
 
 private:

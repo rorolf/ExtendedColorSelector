@@ -30,7 +30,6 @@ static QString entryname1(int k) { return  "EXColorPresets" ".Preset" + QString:
 static QString entryname2(int k) { return  "EXColorPresets" ".Preset" + QString::number(k) + ".mixFromGradients"; }
 static QString entryname3(int k) { return  "EXColorPresets" ".Preset" + QString::number(k) + ".ingredientMixColors"; }
 
-
 EXColorPresetStore::EXColorPresetStore()
     : m_configGroup(KSharedConfig::openConfig()->group(EXSettingsGroupName))
     , m_activePreset(0)
@@ -52,10 +51,9 @@ EXColorPresetStore::EXColorPresetStore()
         }
         colorMixPresets[k1].m_colorModel = ColorModelFactory::fromId(cmId);
 
-        colorMixPresets[k1].m_mixFromGradients = settings.value(entryname2(k1)).toBool();
-
-        size_t len = settings.beginReadArray(entryname3(k1));
-        for (size_t k2=0; k2<len; ++k2)
+        size_t k2max = colorMixPresets[k1].m_ingredientMixColors.size();
+        settings.beginReadArray(entryname3(k1));
+        for (size_t k2=0; k2<k2max; ++k2)
         {
             settings.setArrayIndex(k2);
             float a = settings.value("value1").toFloat();
@@ -67,6 +65,22 @@ EXColorPresetStore::EXColorPresetStore()
 
             qDebug() << "Reading Preset" << k1 << "Color" << k2 <<
                         QString(": (%1,%2,%3)").arg(mixClr[0]).arg(mixClr[1]).arg(mixClr[2]);
+
+            colorMixPresets[k1].m_useGradients[k2] = settings.value("useGradient", false).toBool();
+
+            size_t k3max = settings.beginReadArray("Gradients");
+            for (size_t k3=0; k3<k3max; ++k3) {
+                settings.setArrayIndex(k3);
+                float key  = settings.value("Position", -1.0).toFloat();
+                if (key >= 0 && key <= 1) {
+                    float val1 = settings.value("value1", 0.0).toFloat();
+                    float val2 = settings.value("value2", 0.0).toFloat();
+                    float val3 = settings.value("value3", 0.0).toFloat();
+                    QVector3D val = QVector3D(val1, val2, val3);
+                    colorMixPresets[k1].m_mixGradients[k2].insert(EXGradientColor(val, key));
+                }
+            }
+            settings.endArray();
         }
         settings.endArray();
 
@@ -77,6 +91,7 @@ EXColorPresetStore::EXColorPresetStore()
         if (this->presetsChanged) { writeSettings(); presetsChanged = false; }
     });
     saveSettingsDeferrer->start(500);
+    qDebug() << "Reading Settings completed!";
 }
 
 EXColorPresetStore::~EXColorPresetStore() {}
@@ -101,8 +116,6 @@ void EXColorPresetStore::writeSettings()
     {
         settings.setValue(entryname1(k1), m_colorMixPresets[k1].m_colorModel->displayName());
 
-        settings.setValue(entryname2(k1), m_colorMixPresets[k1].m_mixFromGradients);
-
         settings.beginWriteArray(entryname3(k1));
         size_t k2max = m_colorMixPresets[k1].m_ingredientMixColors.size();
         for (size_t k2=0; k2<k2max; ++k2)
@@ -117,6 +130,23 @@ void EXColorPresetStore::writeSettings()
             settings.setValue("value1", val[0]);
             settings.setValue("value2", val[1]);
             settings.setValue("value3", val[2]);
+
+            settings.setValue("useGradient", m_colorMixPresets[k1].m_useGradients[k2]);
+
+            size_t k3max = m_colorMixPresets[k1].m_mixGradients[k2].m_colors->size();
+            qDebug() << QString("Number of gradient colors: %1").arg(k3max);
+            settings.beginWriteArray("Gradients", k3max);
+            for (size_t k3=0; k3<k3max; ++k3) {
+                float key = m_colorMixPresets[k1].m_mixGradients[k2].m_colors->at(k3).m_positionOnGradient;
+                QVector3D val = m_colorMixPresets[k1].m_mixGradients[k2].m_colors->at(k3).m_color;
+                settings.setArrayIndex(k3);
+                settings.setValue("Position", key);
+                settings.setValue("value1", val[0]);
+                settings.setValue("value2", val[1]);
+                settings.setValue("value3", val[2]);
+            }
+            settings.endArray();
+
         }
         settings.endArray();
     }
@@ -137,9 +167,17 @@ void EXColorPresetStore::onColorSpaceSelected(ColorModelId newClrModel)
     presetsChanged = true;
 }
 
-void EXColorPresetStore::onGradientModeSelected(bool mixFromGradients)
+void EXColorPresetStore::onGradientModeSelected(int channel, bool mixFromGradients)
 {
-    m_colorMixPresets[m_activePreset].m_mixFromGradients = mixFromGradients;
+    qDebug() << QString("In EXColorPresetStore, onGradientModeSelected: %1 %2").arg(channel).arg(mixFromGradients);
+    if ((channel < 0) || (channel >= (int)m_colorMixPresets[m_activePreset].m_useGradients.size())){
+        qDebug() << QString("Selected channel %1 out of bounds").arg(channel);
+        return;
+    } else {
+        QString arg; if (mixFromGradients) { arg = "ON"; } else { arg = "OFF"; }
+        qDebug() << QString("In Preset %1, Selected channel %2 Gradient mode: %3").arg(m_activePreset).arg(channel).arg(arg);
+    };
+    m_colorMixPresets[m_activePreset].m_useGradients[channel] = mixFromGradients;
     presetsChanged = true;
 }
 

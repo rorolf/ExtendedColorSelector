@@ -28,6 +28,7 @@ set(
     EXMIDIMappingTableWidget.cpp
     EXMIDIPanelWidget.cpp
 
+    EXGradient.h
     EXColorMixState.cpp
     EXColorPresetStore.cpp
     EXColorMixerDock.cpp
