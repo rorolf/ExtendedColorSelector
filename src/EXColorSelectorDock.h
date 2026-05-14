@@ -84,8 +84,11 @@ private:
     QComboBox *m_presetSelector;
     QComboBox *m_colorModelSelector;
     int m_selectedColorPatchWidget=-1;
-    std::array<EXColorPatchWidget*, 9> m_colorPatchWidgets;
+    EXColorPatchWidget *m_kritaBaseColorPatchWidget;
+    std::array<EXColorPatchWidget*, 8> m_colorPatchWidgets;
     QButtonGroup *m_mixingModeSelector;
+    QRadioButton *m_mixFromRawColorButton;
+    QRadioButton *m_mixFromGradientButton;
     EXColorPatchWidget *m_mixResultColorPatch;
     EXMIDIPanelWidget* m_midiPanel;
     QTabWidget* m_tabWidget;

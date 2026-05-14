@@ -87,88 +87,87 @@ EXColorSelectorDock::EXColorSelectorDock()
     auto mixSideLayout = new QVBoxLayout();
     mixSideLayout->setObjectName("mixSideLayout");
 
-    for (int k = 0; k<9; ++k)
-    {
+    m_kritaBaseColorPatchWidget = new EXColorPatchWidget();
+    connect(EXColorMixState::instance(), &EXColorMixState::sigKritaBaseColorChanged,
+        this, [this](QVector3D newClr) {
+            Q_UNUSED(this);
+            if (this->m_selectedColorPatchWidget < 0) {
+                QColor newQClr = EXColorMixState::instance()->toQColor(newClr);
+                this->m_kritaBaseColorPatchWidget->m_color = newQClr;
+                this->m_kritaBaseColorPatchWidget->update();
+                // newChannelWidget->onColorSelected(newQClr);
+            }
+        }
+    );
+
+    for (size_t k = 0; k<this->m_colorPatchWidgets.size(); ++k) {
         auto newChannelWidget = new EXColorPatchWidget();
         m_colorPatchWidgets[k] = newChannelWidget;
 
-        if (k!=4)
-        {
-            connect(newChannelWidget, &EXColorPatchWidget::sigClicked,
-                this, [this, k]() {
-                    int curSelect = this->m_selectedColorPatchWidget;
-                    if (curSelect<0) {
-                        // app is free to focus on an object
-                        this->m_selectedColorPatchWidget = k;
-                        this->m_colorPatchWidgets[k]->m_selected = true;
-                        this->m_colorPatchWidgets[k]->update();
+        connect(newChannelWidget, &EXColorPatchWidget::sigClicked,
+            this, [this, k]() {
+                int curSelect = this->m_selectedColorPatchWidget;
+                if (curSelect<0) {
+                    // app is free to focus on an object
+                    this->m_selectedColorPatchWidget = k;
+                    this->m_colorPatchWidgets[k]->m_selected = true;
+                    this->m_colorPatchWidgets[k]->update();
 
-                        for (auto rButton : m_mixingModeSelector->buttons()) {
-                            rButton->setDisabled(false);
-                        }
-
-                        emit sigColorPatchWidgetSelected(k);
-                    } else if (curSelect != k) {
-                        // app already has a focus; do nothing
-                    } else {
-                        // release focus from object
-                        this->m_selectedColorPatchWidget = -1;
-                        this->m_colorPatchWidgets[k]->m_selected = false;
-                        this->m_colorPatchWidgets[k]->update();
-
-                        for (auto rButton : m_mixingModeSelector->buttons()) {
-                            rButton->setDisabled(true);
-                        }
-
-                        emit sigColorPatchWidgetSelected(-1);
+                    for (auto rButton : m_mixingModeSelector->buttons()) {
+                        rButton->setDisabled(false);
                     }
-                }
-            );
-        }
-        else
-        {
-            connect(EXColorMixState::instance(), &EXColorMixState::sigKritaBaseColorChanged,
-                this, [this, k](QVector3D newClr) {
-                    Q_UNUSED(this);
-                    if (this->m_selectedColorPatchWidget < 0) {
-                        QColor newQClr = EXColorMixState::instance()->toQColor(newClr);
-                        this->m_colorPatchWidgets[k]->m_color = newQClr;
-                        this->m_colorPatchWidgets[k]->update();
-                        // newChannelWidget->onColorSelected(newQClr);
-                    }
-                }
-            );
-        }
 
-        int x = k%3;
-        int y = k/3;
+                    emit sigColorPatchWidgetSelected(k);
+                } else if (curSelect != (int)k) {
+                    // app already has a focus; do nothing
+                } else {
+                    // release focus from object
+                    this->m_selectedColorPatchWidget = -1;
+                    this->m_colorPatchWidgets[k]->m_selected = false;
+                    this->m_colorPatchWidgets[k]->update();
+
+                    for (auto rButton : m_mixingModeSelector->buttons()) {
+                        rButton->setDisabled(true);
+                    }
+
+                    emit sigColorPatchWidgetSelected(-1);
+                }
+            }
+        );
+        if (k==4) {
+            // in the middle of a 3x3 grid
+            mixChannelLayout->addWidget(m_kritaBaseColorPatchWidget, 1, 1);
+        }
+        int shift = (k>3);
+        int x = (k+shift)%3;
+        int y = (k+shift)/3;
         mixChannelLayout->addWidget(newChannelWidget, x, y);
     }
 
     QButtonGroup *mixerModeButtonGroup = new QButtonGroup(this);
     m_mixingModeSelector = mixerModeButtonGroup;
 
-    QRadioButton *mixFromRawColorButton = new QRadioButton(this);
-    mixFromRawColorButton->setText("Raw Color Channel");
-    mixFromRawColorButton->setChecked(true);
-    mixFromRawColorButton->setDisabled(true);
+    m_mixFromRawColorButton = new QRadioButton(this);
+    m_mixFromRawColorButton->setText("Raw Color Channel");
+    m_mixFromRawColorButton->setChecked(true);
+    m_mixFromRawColorButton->setDisabled(true);
 
-    connect(mixFromRawColorButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromColorsButtonPressed);
+    connect(m_mixFromRawColorButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromColorsButtonPressed);
 
-    QRadioButton *mixFromGradientButton = new QRadioButton(this);
-    mixFromGradientButton->setText("Gradient Color Channel");
-    mixFromGradientButton->setChecked(false);
-    mixFromGradientButton->setDisabled(true);
+    m_mixFromGradientButton = new QRadioButton(this);
+    m_mixFromGradientButton->setText("Gradient Color Channel");
+    m_mixFromGradientButton->setChecked(false);
+    m_mixFromGradientButton->setDisabled(true);
 
-    connect(mixFromGradientButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromGradientsButtonPressed);
+    connect(m_mixFromGradientButton, &QRadioButton::clicked, this, &EXColorSelectorDock::sigMixFromGradientsButtonPressed);
 
-    mixerModeButtonGroup->addButton(mixFromRawColorButton, 0);
-    mixerModeButtonGroup->addButton(mixFromGradientButton, 1);
+    mixerModeButtonGroup->addButton(m_mixFromRawColorButton, 0);
+    mixerModeButtonGroup->addButton(m_mixFromGradientButton, 1);
 
     m_mixResultColorPatch = new EXColorPatchWidget();
 
-    mixSideLayout->addWidget(mixFromRawColorButton);
-    mixSideLayout->addWidget(mixFromGradientButton);
+    mixSideLayout->addWidget(m_mixFromRawColorButton);
+    mixSideLayout->addWidget(m_mixFromGradientButton);
     mixSideLayout->addWidget(m_mixResultColorPatch);
 
     mixPresetLayout->addLayout(mixChannelLayout);
@@ -330,8 +329,7 @@ int EXColorSelectorDock::selectedPreset() const {
 }
 
 int EXColorSelectorDock::selectedMixChannel() const {
-    int clrPatch = this->m_selectedColorPatchWidget;
-    return clrPatch - (int)(clrPatch > 4);
+    return this->m_selectedColorPatchWidget;
 }
 
 
@@ -374,8 +372,8 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
     for (size_t k=0; k<m_colorPatchWidgets.size(); ++k) {
         if (k == 4) continue;
         int k2 = k - (size_t)(k>4);
-        qDebug() << "Loading Color" << k2 << "into ColorPatchWidget" << k;
-        QVector3D ingClr = newPreset.m_ingredientMixColors[k2];
+        qDebug() << "Loading Color" << k << "into ColorPatchWidget" << k2;
+        QVector3D ingClr = newPreset.m_ingredientMixColors[k];
         qDebug() << "Converting (" << ingClr[0] << ingClr[1] << ingClr[2] << ") to QColor...";
         QColor newClr = EXColorMixState::instance()->toQColor(ingClr);
         // float clrX = newPreset->m_ingredientMixColors[k2][0];
