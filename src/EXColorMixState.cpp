@@ -336,6 +336,7 @@ void EXColorMixState::onIngredientColorWeightChanged(int weightIndex, float valu
 {
     qDebug() << "Changing mixIngredientColorWeight" << weightIndex << "to" << value;
     m_mixIngredientColorWeights[weightIndex] = value;
+    if (m_useGradients[weightIndex]) { m_useGradientColorIndex = weightIndex; }
     mixColors();
 }
 
