@@ -83,13 +83,19 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     connect(uiCapture, &EXColorSelectorDock::sigMixFromColorsButtonPressed, this, [this, uiCapture]() {
         Q_UNUSED(this);
         int selectedChannel = uiCapture->selectedMixChannel();
-        if (selectedChannel >= 0) m_colorPresets->onGradientModeSelected(selectedChannel, false);
+        if (selectedChannel >= 0) {
+            m_colorPresets->onGradientModeSelected(selectedChannel, false);
+            m_mixer->onColorPresetChanged();
+        };
     });
 
     connect(uiCapture, &EXColorSelectorDock::sigMixFromGradientsButtonPressed, this, [this, uiCapture]() {
         Q_UNUSED(this);
         int selectedChannel = uiCapture->selectedMixChannel();
-        if (selectedChannel >= 0) m_colorPresets->onGradientModeSelected(selectedChannel, true);
+        if (selectedChannel >= 0) {
+            m_colorPresets->onGradientModeSelected(selectedChannel, true);
+            m_mixer->onColorPresetChanged();
+        };
     });
 
     connect(uiCapture, &EXColorSelectorDock::sigColorPatchWidgetSelected, this, [this, uiCapture](int newChannel) {
