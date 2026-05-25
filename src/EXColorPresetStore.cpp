@@ -77,7 +77,7 @@ EXColorPresetStore::EXColorPresetStore()
                     float val2 = settings.value("value2", 0.0).toFloat();
                     float val3 = settings.value("value3", 0.0).toFloat();
                     QVector3D val = QVector3D(val1, val2, val3);
-                    const EXGradientColor clr = EXGradientColor(val, key);
+                    EXGradientColor clr = EXGradientColor(val, key);
                     colorMixPresets[k1].m_mixGradients[k2].insert(clr);
                 }
             }
@@ -134,7 +134,7 @@ void EXColorPresetStore::writeSettings()
 
             settings.setValue("useGradient", m_colorMixPresets[k1].m_useGradients[k2]);
 
-            const auto interpPoints = m_colorMixPresets[k1].m_mixGradients[k2].m_colorSpline->points();
+            const auto interpPoints = m_colorMixPresets[k1].m_mixGradients[k2].m_colorSpline.points();
             size_t k3max = interpPoints.size();
             qDebug() << QString("Number of gradient colors: %1").arg(k3max);
             settings.beginWriteArray("Gradients", k3max);
