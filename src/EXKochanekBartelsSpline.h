@@ -2,8 +2,7 @@
 
 
 // KBSpline.h
-#ifndef EXKBSPLINE_H
-#define EXKBSPLINE_K
+#pragma once
 
 #include <QVector3D>
 #include <vector>
@@ -13,6 +12,9 @@
 //#include <cmath>
 
 #include "EXUtils.h"
+//#include "EXGradient.h"
+
+struct EXGradientColor;
 
 class EXKBSpline
 {
@@ -20,32 +22,30 @@ public:
     // Per segment coefficients for C(u) = a*u^3 + b*u^2 + c*u + d, u in [0,1]
     using Coeff4 = std::array<QVector3D, 4>;
 
-    EXKBSpline(const std::vector<QVector3D>& points,
-             const std::vector<float>& times,
+    EXKBSpline(const QVector<EXGradientColor>& points,
              float tension = -0.3f,
              float continuity = 0.0f,
              float bias = 0.0f)
     {
-        init(points, times, tension, continuity, bias);
+        init(points, tension, continuity, bias);
     }
 
-    void init(const std::vector<QVector3D>& points,
-              const std::vector<float>& times,
+    void init(const QVector<EXGradientColor>& points,
               float tension = -0.3f,
               float continuity = 0.0f,
               float bias = 0.0f)
     {
         const int n = static_cast<int>(points.size());
         exAssert(n>=2, "EXKBSpline: need at least 2 points.");
-        exAssert(static_cast<int>(times.size()) == n, "EXKBSpline: points and times must have same length.");
 
-        // Validate strictly increasing times
-        for (int i = 1; i < n; ++i) {
-            exAssert((times[i - 1] < times[i]), "EXKBSpline: times must be strictly increasing.");
-        }
+        m_points = QVector<EXGradientColor>();
+        m_points.reserve(n);
+        for (EXGradientColor newClr : points) { m_points.push_back(newClr); }
 
-        m_points = points;
-        m_times  = times;
+        std::sort(m_points.begin(), m_points.end(), [](EXGradientColor& a, EXGradientColor& b) {
+            return a.m_positionOnGradient < b.m_positionOnGradient; // default ascending sort uses '<'
+        });
+
         m_T = tension;
         m_C = continuity;
         m_B = bias;
@@ -74,26 +74,26 @@ public:
         m_coeffs.resize(n - 1);
 
         for (int i = 0; i < n - 1; ++i) {
-            const float t0 = m_times[i];
-            const float t1 = m_times[i + 1];
+            const float t0 = m_points[i].m_positionOnGradient;
+            const float t1 = m_points[i + 1].m_positionOnGradient;
             const float dt = t1 - t0;
 
             // Convert d/dt -> d/du by multiplying by dt (u = (t-t0)/dt)
             const QVector3D M0 = m_mPlus[i]    * dt;      // outgoing at Pi
             const QVector3D M1 = m_mMinus[i+1] * dt;      // incoming at P_{i+1}
 
-            m_coeffs[i] = hermiteCoeffs(m_points[i], m_points[i + 1], M0, M1);
+            m_coeffs[i] = hermiteCoeffs(m_points[i].m_color, m_points[i + 1].m_color, M0, M1);
         }
     }
 
     // Evaluate at time tquery. Clamps outside range to endpoints.
     QVector3D operator()(float tquery) const
     {
-        if (m_times.empty()) {
+        if (m_points.empty()) {
             return QVector3D();
         }
-        if (m_times.size() == 1) {
-            return m_points[0];
+        if (m_points.size() == 1) {
+            return m_points[0].m_color;
         }
 
         int seg = 0;
@@ -110,9 +110,8 @@ public:
         return (((a * u) + b) * u + cc) * u + d;
     }
 
-    const std::vector<float>&     times()  const { return m_times; }
-    const std::vector<QVector3D>& points() const { return m_points; }
-    const std::vector<Coeff4>&    coeffs() const { return m_coeffs; }
+    const QVector<EXGradientColor>& points() const { return m_points; }
+    const QVector<Coeff4>&    coeffs() const { return m_coeffs; }
 
 private:
     // Mirror endpoint accessor: i in [0..n-1] is real, i=-1 or i=n is mirrored
@@ -120,22 +119,22 @@ private:
     {
         const int n = static_cast<int>(m_points.size());
         if (i >= 0 && i < n) {
-            P = m_points[i];
-            t = m_times[i];
+            P = m_points[i].m_color;
+            t = m_points[i].m_positionOnGradient;
             return;
         }
 
-        exAssert(-1<=i && i<=n, "EXKBSpline: mirroredPointTime only supports i=-1 and i=n for mirroring.");
+        exAssert((-1<=i) && (i<=n), "EXKBSpline: mirroredPointTime only supports i=-1 and i=n for mirroring.");
         if (i <= -1) {
             // P[-1] = 2P0 - P1, t[-1] = 2t0 - t1
-            P = (m_points[0] * 2.f) - m_points[1];
-            t = (m_times[0]  * 2.f) - m_times[1];
+            P = (m_points[0].m_color * 2.f) - m_points[1].m_color;
+            t = (m_points[0].m_positionOnGradient  * 2.f) - m_points[1].m_positionOnGradient;
             return;
         }
         if (i <= n) {
             // P[n] = 2P_{n-1} - P_{n-2}, t[n] = 2t_{n-1} - t_{n-2}
-            P = (m_points[n - 1] * 2.f) - m_points[n - 2];
-            t = (m_times[n - 1]  * 2.f) - m_times[n - 2];
+            P = (m_points[n - 1].m_color * 2.f) - m_points[n - 2].m_color;
+            t = (m_points[n - 1].m_positionOnGradient  * 2.f) - m_points[n - 2].m_positionOnGradient;
             return;
         }
     }
@@ -153,7 +152,7 @@ private:
         const float dt0 = ti   - tim1;
         const float dt1 = tip1 - ti;
 
-        exAssert(dt0 != 0.f && dt1 != 0.f, "EXKBSpline: duplicate time detected (dt==0) in kbTangentsAt.");
+        exAssert((dt0 != 0.f) && (dt1 != 0.f), "EXKBSpline: duplicate time detected (dt==0) in kbTangentsAt.");
 
         const QVector3D d0 = (Pi   - Pim1) / dt0; // left secant
         const QVector3D d1 = (Pip1 - Pi)   / dt1; // right secant
@@ -189,27 +188,29 @@ private:
 
     void segmentIndexAndU(float tquery, int& segOut, float& uOut) const
     {
-        const int n = static_cast<int>(m_times.size());
+        const int n = static_cast<int>(m_points.size());
 
-        if (tquery <= m_times.front()) {
+        if (tquery <= m_points.front().m_positionOnGradient) {
             segOut = 0;
             uOut = 0.f;
             return;
         }
-        if (tquery >= m_times.back()) {
+        if (tquery >= m_points.back().m_positionOnGradient) {
             segOut = n - 2;
             uOut = 1.f;
             return;
         }
 
         // Find last index i such that times[i] <= tquery
-        auto it = std::upper_bound(m_times.begin(), m_times.end(), tquery);
-        int i = static_cast<int>(std::distance(m_times.begin(), it)) - 1;
+        auto it = std::upper_bound(m_points.begin(), m_points.end(), tquery, [](EXGradientColor& a, float b) {
+            return a.m_positionOnGradient < b;
+        });
+        int i = static_cast<int>(std::distance(m_points.begin(), it)) - 1;
         if (i < 0) i = 0;
         if (i > n - 2) i = n - 2;
 
-        const float t0 = m_times[i];
-        const float t1 = m_times[i + 1];
+        const float t0 = m_points[i].m_positionOnGradient;
+        const float t1 = m_points[i + 1].m_positionOnGradient;
         const float dt = t1 - t0;
 
         segOut = i;
@@ -221,8 +222,7 @@ private:
 
 private:
     // Inputs / keyframes
-    std::vector<QVector3D> m_points;
-    std::vector<float>     m_times;
+    QVector<EXGradientColor> m_points;
 
     // KB parameters
     float m_T = 0.f;
@@ -237,8 +237,7 @@ private:
     std::array<std::array<float,4>,4> m_hermiteH;
 
     // Per-segment cubic coefficients
-    std::vector<Coeff4> m_coeffs;
+    QVector<Coeff4> m_coeffs;
 };
 
 
-#endif //EXKBSPLINE_H
