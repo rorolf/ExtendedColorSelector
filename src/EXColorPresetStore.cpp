@@ -77,7 +77,8 @@ EXColorPresetStore::EXColorPresetStore()
                     float val2 = settings.value("value2", 0.0).toFloat();
                     float val3 = settings.value("value3", 0.0).toFloat();
                     QVector3D val = QVector3D(val1, val2, val3);
-                    colorMixPresets[k1].m_mixGradients[k2].insert(EXGradientColor(val, key));
+                    const EXGradientColor clr = EXGradientColor(val, key);
+                    colorMixPresets[k1].m_mixGradients[k2].insert(clr);
                 }
             }
             settings.endArray();
@@ -133,12 +134,13 @@ void EXColorPresetStore::writeSettings()
 
             settings.setValue("useGradient", m_colorMixPresets[k1].m_useGradients[k2]);
 
-            size_t k3max = m_colorMixPresets[k1].m_mixGradients[k2].m_colors->size();
+            const auto interpPoints = m_colorMixPresets[k1].m_mixGradients[k2].m_colorSpline->points();
+            size_t k3max = interpPoints.size();
             qDebug() << QString("Number of gradient colors: %1").arg(k3max);
             settings.beginWriteArray("Gradients", k3max);
             for (size_t k3=0; k3<k3max; ++k3) {
-                float key = m_colorMixPresets[k1].m_mixGradients[k2].m_colors->at(k3).m_positionOnGradient;
-                QVector3D val = m_colorMixPresets[k1].m_mixGradients[k2].m_colors->at(k3).m_color;
+                float key = interpPoints[k3].m_positionOnGradient;
+                QVector3D val = interpPoints[k3].m_color;
                 settings.setArrayIndex(k3);
                 settings.setValue("Position", key);
                 settings.setValue("value1", val[0]);
