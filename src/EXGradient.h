@@ -328,18 +328,23 @@ struct EXColorGradient
         }
         ~EXColorGradient() {}
 
-    EXKBSpline m_colorSpline;
+        QVector3D colorAt(float position) const {
+            return m_colorSpline.at(position);
+        }
 
-    void insert(EXGradientColor& new_color) {
-        m_colorSpline.insert(new_color);
-    }
+        void insert(EXGradientColor& new_color) {
+            m_colorSpline.insert(new_color);
+        }
 
-    void remove(int pos) {
-        m_colorSpline.remove(pos);
-    }
+        void remove(int pos) {
+            m_colorSpline.remove(pos);
+        }
 
-    void remove(EXGradientColor& color) {
-        m_colorSpline.remove(color);
-    }
+        void remove(EXGradientColor& color) {
+            m_colorSpline.remove(color);
+        }
+
+
+        EXKBSpline m_colorSpline;
 };
 
