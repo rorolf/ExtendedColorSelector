@@ -29,6 +29,7 @@ set(
     EXMIDIPanelWidget.cpp
 
     EXGradient.h
+    EXGradientWidget.cpp
     EXColorMixState.cpp
     EXColorPresetStore.cpp
     EXColorMixerDock.cpp
