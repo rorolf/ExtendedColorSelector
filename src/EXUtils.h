@@ -63,4 +63,10 @@ inline void exAssert(bool condition, const QString& msg)
     }
 }
 
+template<typename ArrT>
+inline bool inbounds(const ArrT& arr, decltype(arr.size()) index) {
+    return (index>=0) && (index<arr.size()); // implicit type conversion may create problems
+}
+
+
 #endif // EXTENDEDUTILS_H
