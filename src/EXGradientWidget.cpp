@@ -147,11 +147,12 @@ EXGradientRectangleWidget::EXGradientRectangleWidget(QWidget* parent)
 {
     this->m_repaintTimer.setInterval(100);
     connect(&m_repaintTimer, &QTimer::timeout, this, [this]() {
-        if (m_sizeChanged) {
+        if (!m_gradientImageBase.isNull() && m_sizeChanged) {
             m_gradientImageScaled = m_gradientImageBase.scaled(this->width(), this->height());
             m_sizeChanged = false;
         }
     });
+    this->m_repaintTimer.start();
 }
 
 EXGradientRectangleWidget::EXGradientRectangleWidget(QWidget* parent, const EXColorGradient& gradient)
@@ -161,11 +162,12 @@ EXGradientRectangleWidget::EXGradientRectangleWidget(QWidget* parent, const EXCo
 
     this->m_repaintTimer.setInterval(100);
     connect(&m_repaintTimer, &QTimer::timeout, this, [this]() {
-        if (m_sizeChanged) {
+        if (!m_gradientImageBase.isNull() && m_sizeChanged) {
             m_gradientImageScaled = m_gradientImageBase.scaled(this->width(), this->height());
             m_sizeChanged = false;
         }
     });
+    this->m_repaintTimer.start();
 }
 
 void EXGradientRectangleWidget::setGradient(const EXColorGradient& colorGradient) {
