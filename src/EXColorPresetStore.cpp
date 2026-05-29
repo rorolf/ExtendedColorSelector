@@ -1,6 +1,7 @@
 
 
 
+#include <array>
 #include <string>
 #include <charconv>
 #include <qbitarray.h>
@@ -97,12 +98,28 @@ EXColorPresetStore::EXColorPresetStore()
 
 EXColorPresetStore::~EXColorPresetStore() {}
 
-const EXColorPreset& EXColorPresetStore::activePreset() {
+const EXColorPreset& EXColorPresetStore::activePreset() const {
     return this->m_colorMixPresets[this->m_activePreset];
 }
 
-int EXColorPresetStore::activePresetIndex() {
+int EXColorPresetStore::activePresetIndex() const {
     return this->m_activePreset;
+}
+
+bool EXColorPresetStore::activePresetUsesGradient(int channelIndex) const {
+    return this->m_colorMixPresets[m_activePreset].m_useGradients[channelIndex];
+}
+
+
+void EXColorPresetStore::moveGradientPoint(int channelIndex, int gradientpointIndex, float newPosition) {
+    if (inbounds(m_colorMixPresets, m_activePreset)) {
+        if (inbounds(m_colorMixPresets[m_activePreset].m_mixGradients, channelIndex)) {
+            EXKBSpline& colorSpline = m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
+            if (inbounds(colorSpline.points(), gradientpointIndex)) {
+                colorSpline.moveGradientPoint(gradientpointIndex, newPosition);
+            }
+        }
+    }
 }
 
 void EXColorPresetStore::writeSettings()
@@ -188,4 +205,16 @@ void EXColorPresetStore::onMixColorChanged(int clrChannelIndex, QVector3D newClr
     m_colorMixPresets[m_activePreset].m_ingredientMixColors[clrChannelIndex] = newClr;
     presetsChanged = true;
 }
+
+void EXColorPresetStore::onGradientColorChanged(int clrChannelIndex, int gradientPointIndex, const QVector3D& newlyPickedColor)
+{
+    EXKBSpline colorSpline = m_colorMixPresets[m_activePreset].m_mixGradients[clrChannelIndex].m_colorSpline;
+    colorSpline.replaceColor(gradientPointIndex, newlyPickedColor);
+    presetsChanged = true;
+}
+
+
+
+
+
 

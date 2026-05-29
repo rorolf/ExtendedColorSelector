@@ -49,14 +49,16 @@ class EXColorPresetStore : public QObject, public KisShared
 public:
     EXColorPresetStore();
     ~EXColorPresetStore();
+    static EXColorPresetStore *instance();
 
     KConfigGroup m_configGroup;
 
-    const EXColorPreset& activePreset();
-    int activePresetIndex();
+    const EXColorPreset& activePreset() const;
+    int activePresetIndex() const;
+    bool activePresetUsesGradient(int channel) const;
     void writeSettings();
 
-    static EXColorPresetStore *instance();
+    void moveGradientPoint(int channelIndex, int gradientpointIndex, float newWeight);
 
 Q_SIGNALS:
     void sigColorPresetChanged();        // overwrites EXColorState's active preset
@@ -66,6 +68,7 @@ public Q_SLOTS:
     void onColorSpaceSelected(ColorModelId newClrModel);
     void onGradientModeSelected(int channel, bool mixFromGradients);
     void onMixColorChanged(int clrChannelIndex, QVector3D newClr);
+    void onGradientColorChanged(int clrChannelIndex, int gradientPointIndex, const QVector3D& newlyPickedColor);
 
 private:
     int m_activePreset;
