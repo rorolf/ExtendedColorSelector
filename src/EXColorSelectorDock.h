@@ -15,7 +15,7 @@
 #include "EXChannelSlider.h"
 #include "EXColorModelSwitchers.h"
 #include "EXColorPatchPopup.h"
-#include "EXColorState.h"
+#include "EXGradientWidget.h"
 #include "EXPortableColorSelector.h"
 #include "EXSettingsDialog.h"
 #include "EXSettingsState.h"
@@ -57,6 +57,7 @@ public:
     //TODO report preset name instead
     int selectedPreset() const;
     int selectedMixChannel() const;
+    int selectedGradientPoint() const;
 
 private:
     friend class EXActionBus;
@@ -90,6 +91,7 @@ private:
     QRadioButton *m_mixFromRawColorButton;
     QRadioButton *m_mixFromGradientButton;
     EXColorPatchWidget *m_mixResultColorPatch;
+    EXGradientWidget* m_gradientWidget;
     EXMIDIPanelWidget* m_midiPanel;
     QTabWidget* m_tabWidget;
 

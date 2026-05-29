@@ -204,6 +204,16 @@ EXColorSelectorDock::EXColorSelectorDock()
             this,
             SLOT(onColorSpaceSelected(const KoColorSpace *)));
 
+    //################################################################################
+    //## EXGradientWidget
+    //################################################################################
+
+    m_gradientWidget = EXGradientWidget::fromPreset(this, EXColorPresetStore::instance()->activePreset(), 0);
+    colorMixLayout->addWidget(m_gradientWidget);
+
+    //################################################################################
+    //## EXChannelPlane inside a KisPopupButton
+    //################################################################################
 
     auto colorSelectLayout = new QVBoxLayout();
 
@@ -332,6 +342,12 @@ int EXColorSelectorDock::selectedMixChannel() const {
     return this->m_selectedColorPatchWidget;
 }
 
+int EXColorSelectorDock::selectedGradientPoint() const {
+    bool usesGradient = EXColorPresetStore::instance()->activePresetUsesGradient(this->selectedMixChannel());
+    if (usesGradient) { return this->m_gradientWidget->selectedGradientPoint(); }
+    else { return -1; }
+}
+
 
 void EXColorSelectorDock::enterEvent(QEvent *event)
 {
@@ -383,6 +399,10 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
         // m_colorPatchWidgets[k]->onColorSelected(newClr);
         m_colorPatchWidgets[k]->m_color = newClr;
         m_colorPatchWidgets[k]->update();
+    }
+    int mixChannel = this->selectedMixChannel();
+    if (newPreset.m_useGradients[mixChannel]) {
+        m_gradientWidget->usePreset(newPreset, mixChannel);
     }
 }
 
