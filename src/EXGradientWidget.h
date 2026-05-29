@@ -1,9 +1,12 @@
 
 
+#pragma once
+
 #include <QWidget>
 #include <QTimer>
 #include <QDoubleSpinBox>
 #include <QPushButton>
+#include <cstdint>
 #include <qwidget.h>
 
 #include "EXGradient.h"
@@ -14,42 +17,44 @@
 //## EXGradientPointerWidget
 //################################################################################
 
-class EXGradientPointerWidget : public QWidget
+class EXGradientPointerWidget
 {
-    Q_OBJECT
-
     public:
-        explicit EXGradientPointerWidget(QWidget* parent = nullptr, QColor assignedColor=QColor(), float position=-1.0f)
-        : QWidget(parent)
-        , m_isCurrentPositionPointer(false)
+        explicit EXGradientPointerWidget(QColor assignedColor=QColor(), float position=-1.0f, float width=16)
+        : m_isCurrentPositionPointer(false)
         , m_isSelected(false)
         , m_assignedColor(assignedColor)
         , m_position(position)
-        {};
-        EXGradientPointerWidget(QWidget* parent, QColor assignedColor, float position, bool isCurrentPositionPointer)
-        : QWidget(parent), m_isCurrentPositionPointer(isCurrentPositionPointer)
-        , m_assignedColor(assignedColor), m_position(position) {};
+        , m_width(width)
+        {  };
+        EXGradientPointerWidget(QColor assignedColor, float position, bool isCurrentPositionPointer)
+        : m_isCurrentPositionPointer(isCurrentPositionPointer)
+        , m_assignedColor(assignedColor), m_position(position)
+        { if (isCurrentPositionPointer) { m_width = 12; } else { m_width=16; } };
         ~EXGradientPointerWidget() {};
         static EXGradientPointerWidget* fromGradient(EXColorGradient &gradient, float position);
-        static EXGradientPointerWidget* fromGradient(QWidget* parent, EXColorGradient &gradient, float position);
-        static EXGradientPointerWidget* CurrentPositionPointer(QWidget* parent);
+        static EXGradientPointerWidget* CurrentPositionPointer();
 
-        float currentPosition();
-    public Q_SLOTS:
-        void onAssignedDataChanged(QColor newClr, float position);
+        float currentPosition() const;
+        void changeCurrentPosition(const QRectF container, float position);
+        void setSelected(bool selected);
 
-    Q_SIGNALS:
-        void sigClicked();
+        // QPolygonF's own "contains" method does _not_
+        // register events with matching coordinates
+        bool contains(const QPointF& point) const;
+        void paintSelf(QPainter& painter) const;
+        void computeBodyShape(const QRectF& container);
 
     protected:
-        void paintEvent(QPaintEvent* event) override;
-        void mousePressEvent(QMouseEvent *event) override;
 
     private:
+
+        QPolygonF m_bodyShape;
         bool m_isCurrentPositionPointer = false;
         bool m_isSelected = false;
         QColor m_assignedColor;
         float m_position;
+        float m_width;
 };
 
 //################################################################################
@@ -63,21 +68,22 @@ class EXGradientPointerContainerWidget : public QWidget
     public:
         explicit EXGradientPointerContainerWidget(QWidget* parent);
 
+        int selectedGradientPoint() const;
+
         void setPointsFromGradient(EXColorGradient& gradient);
         void addPointer(const QColor& assignedColor);
         void removePointer();
         void adjustColor(QColor& assignedColor);
 
     public Q_SLOTS:
-        void onGradientPositionChanged(float signal) {};
-        void onPointerSelected(EXGradientPointerWidget* pointer) {};
-
+        void onGradientPositionChanged(float signal);
 
     Q_SIGNALS:
 
     protected:
         void paintEvent(QPaintEvent* event) override;
         void resizeEvent(QResizeEvent* event) override;
+        void mousePressEvent(QMouseEvent *event) override;
 
     private:
         EXGradientPointerWidget* m_currentPositionPointer;
@@ -127,15 +133,15 @@ class EXGradientWidget : public QWidget
 
     public:
         explicit EXGradientWidget(QWidget* parent);
-        static EXGradientWidget* fromPreset(QWidget* parent, EXColorPreset* preset, int channelIndex);
+        static EXGradientWidget* fromPreset(QWidget* parent, const EXColorPreset& preset, int channelIndex);
+
+        int selectedGradientPoint() const;
+        void usePreset(const EXColorPreset& preset, int channelIndex);
 
     public Q_SLOTS:
-        void onGradientSelected(int channelIndex);
+        void onGradientSelected(const EXColorPreset& preset, int channelIndex);
         // void onPresetChanged(); // when preset is changed, gradient is deselected
         void onGradientPositionChanged(float signal);
-        void onAddGradientPointer();
-        void onGradientPointerSelected(EXGradientPointerWidget* pointerWidget);
-        void onRemoveGradientPointer(EXGradientPointerWidget* pointerWidget);
 
     Q_SIGNALS:
 

@@ -11,6 +11,7 @@
 #include <qcolor.h>
 #include <qvector3d.h>
 #include <qwidget.h>
+#include <algorithm>
 
 #include "EXColorMixState.h"
 
@@ -22,30 +23,87 @@
 
 EXGradientPointerWidget* EXGradientPointerWidget::fromGradient(EXColorGradient &gradient, float position)
 {
-    return EXGradientPointerWidget::fromGradient(nullptr, gradient, position);
-};
-
-EXGradientPointerWidget* EXGradientPointerWidget::fromGradient(QWidget* parent, EXColorGradient &gradient, float position)
-{
     QVector3D assignedColorRep = gradient.colorAt(position);
     QColor assignedColor = EXColorMixState::instance()->toQColor(assignedColorRep);
-    return new EXGradientPointerWidget(parent, assignedColor, position, false);
+    return new EXGradientPointerWidget(assignedColor, position, false);
 };
 
-EXGradientPointerWidget* EXGradientPointerWidget::CurrentPositionPointer(QWidget* parent) {
-    return new EXGradientPointerWidget(parent, QColor(), 0.0f, true);
+EXGradientPointerWidget* EXGradientPointerWidget::CurrentPositionPointer() {
+    return new EXGradientPointerWidget(QColor(), 0.5f, true);
 }
 
-float EXGradientPointerWidget::currentPosition() {
+float EXGradientPointerWidget::currentPosition() const {
     return m_position;
 }
 
-void EXGradientPointerWidget::paintEvent(QPaintEvent *)
-{
-    QPainter p(this);
+void EXGradientPointerWidget::computeBodyShape(const QRectF& container) {
+
+    float midPointPosition = m_position;
+    qreal offset = container.left() + std::clamp(midPointPosition, 0.0f, 1.0f)*container.width() - m_width/2;
+    // determine bounding box
+    QRectF sizeRect = QRectF(offset, container.top(), m_width, container.height());
+    QPointF tL = sizeRect.topLeft();
+    QPointF tR = sizeRect.topRight();
+    QPointF bL = sizeRect.bottomLeft();
+    QPointF bR = sizeRect.bottomRight();
+
+    QPointF p1 = bL;
+    QPointF p2 = (bL + tL)/2;
+    QPointF p3 = (tL+tR)/2;
+    QPointF p4 = (bR + tR)/2;
+    QPointF p5 = bR;
+
+    //truncate shape at the border
+    qreal left = container.left(); qreal right = container.right();
+    if (p1.x()<left) p1.setX(left);
+    if (p2.x()<left) p2.setX(left);
+    if (p4.x()>right) p4.setX(right);
+    if (p5.x()>right) p5.setX(right);
+
+    this->m_bodyShape = QPolygonF({p1, p2, p3, p4, p5});
+}
+
+// QPolygonF's contains does _not_ accept points with correct coordinates
+bool EXGradientPointerWidget::contains(const QPointF& point) const {
+    qDebug() << QString("contains was called with: (%1, %2)").arg(point.x()).arg(point.y());
+    qDebug() << QString("body size: %1").arg(m_bodyShape.size());
+    for (int k=0; k<m_bodyShape.size(); ++k) {
+        qDebug() << QString("\tbody point: (%1,%2)").arg(m_bodyShape.at(k).x()).arg(m_bodyShape.at(k).y());
+    }
+    if (m_bodyShape.isEmpty()) return false;
+
+    // QPointF bL = m_bodyShape.at(0); // unused
+    QPointF tL = m_bodyShape.at(1);
+    QPointF tP = m_bodyShape.at(2);
+    QPointF tR = m_bodyShape.at(3);
+    QPointF bR = m_bodyShape.at(4);
+
+
+    float eX = point.x(); float eY = point.y();
+    // bottom rectangle bLbRtRtL
+    if ((eX>=tL.x()) && (eY>=tL.y()) &&
+        (eX<=bR.x()) && (eY<=bR.y())) return true;
+
+    // top triangle tLtRtP is always based on an x-axis parallel segment tL <> tR
+    if ((eY<tL.y()) || eY>tP.y()) return false;
+    // and left and right are known, so there is A left and B right of (eX,eY) iff (eX,eY) is inside the triangle
+    // A = tL + α*(tP-tL) && tP = tR + β*(tP-tR), and A.y() = B.y() = eY
+    // eY -tL.y() = α*(tP-tL).y()
+    float α = (eY - tL.y()) / (tP.y() - tL.y());
+    float β = (eY - tR.y()) / (tP.y() - tR.y());
+    float Ax = tL.x() + α*(tP.x() - tL.x());
+    float Bx = tR.x() + β*(tP.x() - tR.x());
+
+    if ((Ax<=eX) && (eX<=Bx)) return true;
+    else return false;
+}
+
+void EXGradientPointerWidget::paintSelf(QPainter& p) const {
     p.setRenderHint(QPainter::Antialiasing, false);
     if (m_isCurrentPositionPointer) {
-        p.setPen(QColor(0,0,153));
+        if (m_isSelected) { p.setPen(QColor(200,200,255)); }
+        else { p.setPen(QColor(0,0,153)); }
+
         p.setBrush(QColor(0,0,0));
     } else {
         if (m_isSelected) {
@@ -57,34 +115,17 @@ void EXGradientPointerWidget::paintEvent(QPaintEvent *)
         p.setBrush(m_assignedColor);
     }
 
-    QRect sizeRect = this->rect();
-    QPoint tL = sizeRect.topLeft();
-    QPoint tR = sizeRect.topRight();
-    QPoint bL = sizeRect.bottomLeft();
-    QPoint bR = sizeRect.bottomRight();
-
-    QPoint p1 = bL; QPoint p2 = (bL + tL)/2;
-    QPoint p3 = (tL+tR)/2;
-    QPoint p4 = (bR + tR)/2;
-    QPoint p5 = bR;
-
-    QPolygonF shape = QPolygonF({p1, p2, p3, p4, p5});
-    p.drawConvexPolygon(shape);
+    p.drawConvexPolygon(m_bodyShape);
 }
 
-
-
-void EXGradientPointerWidget::mousePressEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::LeftButton) {
-        // Selection should be handled by the parent element
-        emit sigClicked();
-    }
-}
-
-void EXGradientPointerWidget::onAssignedDataChanged(QColor newClr, float position) {
-    m_assignedColor = newClr; m_position = position;
+void EXGradientPointerWidget::changeCurrentPosition(const QRectF container, float position) {
+    m_position = std::clamp(position, 0.0f, 1.0f);
+    this->computeBodyShape(container);
 };
+
+void EXGradientPointerWidget::setSelected(bool selected) {
+    m_isSelected = selected;
+}
 
 //################################################################################
 //## EXGradientPointerContainerWidget
@@ -92,11 +133,13 @@ void EXGradientPointerWidget::onAssignedDataChanged(QColor newClr, float positio
 
 EXGradientPointerContainerWidget::EXGradientPointerContainerWidget(QWidget* parent)
 : QWidget(parent)
-, m_currentPositionPointer(EXGradientPointerWidget::CurrentPositionPointer(this))
-, m_pointers({ new EXGradientPointerWidget(this), new EXGradientPointerWidget(this) })
+, m_currentPositionPointer(EXGradientPointerWidget::CurrentPositionPointer())
+, m_pointers({ new EXGradientPointerWidget(QColor(), 0.0f), new EXGradientPointerWidget(QColor(255,255,255), 1.0f) })
 { }
 
 void EXGradientPointerContainerWidget::setPointsFromGradient(EXColorGradient& gradient) {
+    m_selectedPointer = -1;
+    for (EXGradientPointerWidget* pointer : m_pointers) { delete pointer; }
     m_pointers.clear();
     const QVector<EXGradientColor>& interpolPoints = gradient.m_colorSpline.points();
     for (int k=0; k<interpolPoints.size(); ++k) {
@@ -104,27 +147,68 @@ void EXGradientPointerContainerWidget::setPointsFromGradient(EXColorGradient& gr
         EXGradientPointerWidget* pointer = EXGradientPointerWidget::fromGradient(gradient, pos);
         m_pointers.push_back(pointer);
     }
+
     this->update();
+}
+
+int EXGradientPointerContainerWidget::selectedGradientPoint() const {
+    return m_selectedPointer;
 }
 
 void EXGradientPointerContainerWidget::paintEvent(QPaintEvent *event) {
     QWidget::paintEvent(event);
+    QPainter p(this);
+    p.setPen(QColor(0,64,64));
+    p.setBrush(QColor(0,220,220));
+    p.drawRect(this->rect().adjusted(1, 1, -1, -1));
+
+    for (EXGradientPointerWidget* pointer : m_pointers) { pointer->paintSelf(p); }
+    m_currentPositionPointer->paintSelf(p);
 }
 
 void EXGradientPointerContainerWidget::resizeEvent(QResizeEvent *event) {
-    QWidget::resizeEvent(event);
-    int parentWidth = this->width();
+    QRectF rect = this->rect();
+    for (EXGradientPointerWidget* pointer : m_pointers) { pointer->computeBodyShape(rect); }
+    m_currentPositionPointer->computeBodyShape(rect);
 
-    for (EXGradientPointerWidget* pointer : m_pointers) {
-        float pointerX = static_cast<int>(pointer->currentPosition()*float(parentWidth));
-        pointer->move(pointerX, 0);
-    }
+    QWidget::resizeEvent(event);
 }
+
+
+
+void EXGradientPointerContainerWidget::mousePressEvent(QMouseEvent *event)
+{
+    QPointF queryPos = event->localPos();
+    if (m_currentPositionPointer->contains(queryPos)) {
+        event->ignore(); return;
+    }
+
+    int clickedPointer = -2;
+    for (int k=0; k<m_pointers.size(); ++k) {
+        if (m_pointers[k]->contains(queryPos)) clickedPointer = k;
+    }
+    qDebug() << QString("Hit event calculations ended with: %1").arg(clickedPointer);
+    if (clickedPointer < 0) {
+        if (m_selectedPointer >= 0) { m_pointers[m_selectedPointer]->setSelected(false); }
+        m_selectedPointer = -1;
+    } else {
+        m_selectedPointer = clickedPointer;
+        m_pointers[m_selectedPointer]->setSelected(true);
+    }
+    this->update();
+}
+
+void EXGradientPointerContainerWidget::onGradientPositionChanged(float signal) {
+    qDebug() << QString("GradientPointerContainer received signal: %1").arg(signal);
+    if (m_selectedPointer>=0) { m_pointers[m_selectedPointer]->changeCurrentPosition(this->rect(), signal); }
+    else { m_currentPositionPointer->changeCurrentPosition(this->rect(), signal); }
+    this->update();
+};
 
 
 void EXGradientPointerContainerWidget::addPointer(const QColor& assignedColor) {
     float position = m_currentPositionPointer->currentPosition();
-     EXGradientPointerWidget* newpointer = new EXGradientPointerWidget(this, assignedColor, position);
+     EXGradientPointerWidget* newpointer = new EXGradientPointerWidget(assignedColor, position);
      m_pointers.push_back(newpointer);
 };
 
@@ -133,7 +217,7 @@ void EXGradientPointerContainerWidget::removePointer() {
         EXGradientPointerWidget* rmWidget = m_pointers[m_selectedPointer];
         m_pointers.remove(m_selectedPointer);
         m_selectedPointer = -1;
-        rmWidget->deleteLater();
+        delete rmWidget;
     }
 };
 
@@ -229,7 +313,7 @@ EXGradientWidget::EXGradientWidget(QWidget* parent)
     this->m_biasSpinBox = new QDoubleSpinBox(this);
     for (QDoubleSpinBox* spinBox : {m_tensionSpinbox, m_continuitySpinBox, m_biasSpinBox}) {
         spinBox->setRange(-1, 1);
-        spinBox->setSingleStep(0.1);
+        spinBox->setSingleStep(0.05);
         parameterLayout->addWidget(spinBox);
     }
 
@@ -247,22 +331,36 @@ EXGradientWidget::EXGradientWidget(QWidget* parent)
 };
 
 
-EXGradientWidget* EXGradientWidget::fromPreset(QWidget* parent, EXColorPreset* preset, int channelIndex)
+EXGradientWidget* EXGradientWidget::fromPreset(QWidget* parent, const EXColorPreset& preset, int channelIndex)
 {
     EXGradientWidget* widget = new EXGradientWidget(parent);
-    widget->m_gradient = preset->m_mixGradients[channelIndex];
-    widget->m_gradientRectangle->setGradient(widget->m_gradient);
-    widget->m_pointerContainer->setPointsFromGradient(widget->m_gradient);
+    widget->usePreset(preset, channelIndex);
 
     return widget;
 };
 
-void EXGradientWidget::onGradientSelected(int channelIndex) {};
-        // void onPresetChanged(); // when preset is changed, gradient is deselected
-void EXGradientWidget::onGradientPositionChanged(float signal) { };
-void EXGradientWidget::onAddGradientPointer() {};
-void EXGradientWidget::onGradientPointerSelected(EXGradientPointerWidget* pointerWidget) {};
-void EXGradientWidget::onRemoveGradientPointer(EXGradientPointerWidget* pointerWidget) {};
+int EXGradientWidget::selectedGradientPoint() const {
+    return m_pointerContainer->selectedGradientPoint();
+}
+
+void EXGradientWidget::usePreset(const EXColorPreset& preset, int channelIndex) {
+    if ((channelIndex<0) || (channelIndex>=preset.m_mixGradients.size())) { return; }
+
+    m_gradient = preset.m_mixGradients[channelIndex];
+    m_gradientRectangle->setGradient(this->m_gradient);
+    m_pointerContainer->setPointsFromGradient(this->m_gradient);
+};
+
+void EXGradientWidget::onGradientSelected(const EXColorPreset& preset, int channelIndex) {
+    this->usePreset(preset,channelIndex);
+};
+
+void EXGradientWidget::onGradientPositionChanged(float signal) {
+    m_pointerContainer->onGradientPositionChanged(signal);
+};
+
+
+
 
 
 
