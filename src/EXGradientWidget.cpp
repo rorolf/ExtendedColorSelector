@@ -184,6 +184,8 @@ void EXGradientRectangleWidget::setGradient(const EXColorGradient& colorGradient
     }
     const uchar* rawData = reinterpret_cast<uchar*>(m_gradientImageData.data());
     m_gradientImageBase = QImage(rawData, 128, 1, QImage::Format_ARGB32);
+    m_sizeChanged = true;
+    this->update();
 }
 
 void EXGradientRectangleWidget::resizeEvent(QResizeEvent *event) {
@@ -193,10 +195,14 @@ void EXGradientRectangleWidget::resizeEvent(QResizeEvent *event) {
 
 void EXGradientRectangleWidget::paintEvent(QPaintEvent *)
 {
+    QPainter p(this);
     if (!m_gradientImageScaled.isNull()) {
-        QPainter p(this);
         p.drawImage(0, 0, m_gradientImageScaled);
+    } else {
+        p.setBrush(QColor(128,0,128));
     }
+    p.setPen(QColor(128,128,0));
+    p.drawRect(this->rect().adjusted(1, 1, -1, -1));
 }
 
 //################################################################################
