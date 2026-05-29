@@ -119,6 +119,25 @@ public:
         }
     }
 
+    void moveGradientPoint(int gradientpointIndex, float newPosition) {
+        if (inbounds(m_points, gradientpointIndex)) {
+            m_points[gradientpointIndex] = newPosition;
+            // must not deduplicate here, but sorting is necessary
+            std::sort(m_points.begin(), m_points.end(), [](EXGradientColor& a, EXGradientColor& b) {
+                return a.m_positionOnGradient < b.m_positionOnGradient; // default ascending sort uses '<'
+            });
+            this->preprocess();
+        }
+    };
+
+    void replaceColor(int gradientPointIndex, const QVector3D& newlyPickedColor) {
+        if (inbounds(m_points, gradientPointIndex)) {
+            float position = m_points[gradientPointIndex].m_positionOnGradient;
+            m_points[gradientPointIndex] = EXGradientColor(newlyPickedColor, position);
+            this->preprocess();
+        }
+    }
+
     // Evaluate at time tquery. Clamps outside range to endpoints.
     QVector3D operator()(float tquery) const {
         return this-> at(tquery);
