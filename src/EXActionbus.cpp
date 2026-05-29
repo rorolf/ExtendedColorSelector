@@ -14,6 +14,7 @@
 #include "EXMIDIMapper_PresetControl.h"
 #include "EXMIDIMappingEntry.h"
 #include "EXMIDIMappingTableWidget.h"
+#include <ctime>
 #include <qglobal.h>
 
 
@@ -50,8 +51,9 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, &EXActionBus::onKritaBaseColorChanged);
 
-    connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [uiCapture, mixerCapture](QVector3D newClr) {
-        if (uiCapture->selectedMixChannel() < 0) {
+    connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [this, uiCapture, mixerCapture](QVector3D newClr) {
+        int channelIndex = uiCapture->selectedMixChannel();
+        if (channelIndex < 0) {
             QColor newQClr = mixerCapture->toQColor(newClr);
             uiCapture->m_colorPatchPopup->updateColor(newQClr);
             uiCapture->m_mixResultColorPatch->m_color = newQClr;
@@ -107,6 +109,11 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         uiCapture->m_mixFromGradientButton->blockSignals(true);
         uiCapture->m_mixFromGradientButton->setChecked(useGradient);
         uiCapture->m_mixFromGradientButton->blockSignals(false);
+
+        if (useGradient) {
+            uiCapture->m_gradientWidget->show();
+            uiCapture->m_gradientWidget->usePreset(m_colorPresets->activePreset(), newChannel);
+        } else { uiCapture->m_gradientWidget->hide(); }
     });
 
 
@@ -183,7 +190,25 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     connect(this, &EXActionBus::sigKnobTurned, m_mixer, [this](int deviceIndex, int value) {
         float newWeight = (float)(value)/(float)(127);
-        this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);
+        if (m_colorPresets->activePresetUsesGradient(deviceIndex) &&
+            (m_tmpui->selectedGradientPoint() >= 0)
+        ) {
+            int gradientpointIndex = m_tmpui->selectedGradientPoint();
+            m_colorPresets->moveGradientPoint(deviceIndex, gradientpointIndex, newWeight);
+            m_mixer->onColorPresetChanged();
+            m_tmpui->m_gradientWidget->usePreset(m_colorPresets->activePreset(), deviceIndex);
+        } else {
+            this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);
+        }
+    });
+
+    connect(this, &EXActionBus::sigKnobTurned, uiCapture, [this, uiCapture](int deviceIndex, int value) {
+        int channelIndex=deviceIndex;
+        if (this->m_colorPresets->activePresetUsesGradient(channelIndex) &&
+            (uiCapture->selectedMixChannel() == deviceIndex)) {
+            float signal = float(value)/float(127);
+            uiCapture->m_gradientWidget->onGradientPositionChanged(signal);
+        }
     });
 
     //
@@ -271,6 +296,10 @@ void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
     qDebug() << "Preset selected:" << activePreset;
 
     // m_colorPresets->m_colorMixPresets[activePreset].m_ingredientMixColors[selectedClrPatch] = newlyPickedColor;
+    int selectedGradientPoint = m_tmpui->selectedGradientPoint();
+    if (selectedGradientPoint>=0) {
+        m_colorPresets->onGradientColorChanged(selectedClrPatch, selectedGradientPoint, newlyPickedColor);
+    }
     m_colorPresets->onMixColorChanged(selectedClrPatch, newlyPickedColor);
     m_tmpui->onNewPresetSelected(activePreset);
     //TODO: without informing EXChannelPlane, this whacks the color selector
