@@ -401,7 +401,7 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
         m_colorPatchWidgets[k]->update();
     }
     int mixChannel = this->selectedMixChannel();
-    if (newPreset.m_useGradients[mixChannel]) {
+    if (EXColorPresetStore::instance()->activePresetUsesGradient(mixChannel)) {
         m_gradientWidget->usePreset(newPreset, mixChannel);
     }
 }
