@@ -58,6 +58,8 @@ public:
     bool activePresetUsesGradient(int channel) const;
     void writeSettings();
 
+    void addGradientPoint(int channelIndex, float position);
+    void removeGradientPoint(int channelIndex, int gradientpointIndex);
     void moveGradientPoint(int channelIndex, int gradientpointIndex, float newWeight);
 
 Q_SIGNALS:

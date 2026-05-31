@@ -107,9 +107,23 @@ int EXColorPresetStore::activePresetIndex() const {
 }
 
 bool EXColorPresetStore::activePresetUsesGradient(int channelIndex) const {
-    return this->m_colorMixPresets[m_activePreset].m_useGradients[channelIndex];
+    auto activePreset = this->m_colorMixPresets[m_activePreset];
+    if (inbounds(activePreset.m_useGradients, channelIndex)) {
+        return activePreset.m_useGradients[channelIndex];
+    } else { return false; }
 }
 
+void EXColorPresetStore::addGradientPoint(int channelIndex, float position) {
+    position = std::clamp(position, 0.0f, 1.0f);
+    EXKBSpline* colorSpline = &this->m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
+    QVector3D pointColor = colorSpline->at(position);
+    colorSpline->insert(EXGradientColor(pointColor, position));
+}
+
+void EXColorPresetStore::removeGradientPoint(int channelIndex, int gradientpointIndex) {
+    EXKBSpline* colorSpline = &this->m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
+    colorSpline->remove(gradientpointIndex);
+}
 
 void EXColorPresetStore::moveGradientPoint(int channelIndex, int gradientpointIndex, float newPosition) {
     if (inbounds(m_colorMixPresets, m_activePreset)) {
