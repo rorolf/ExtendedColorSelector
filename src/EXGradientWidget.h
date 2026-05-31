@@ -69,6 +69,7 @@ class EXGradientPointerContainerWidget : public QWidget
         explicit EXGradientPointerContainerWidget(QWidget* parent);
 
         int selectedGradientPoint() const;
+        float currentPosition() const;
 
         void setPointsFromGradient(EXColorGradient& gradient);
         void addPointer(const QColor& assignedColor);

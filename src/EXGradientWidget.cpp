@@ -155,6 +155,10 @@ int EXGradientPointerContainerWidget::selectedGradientPoint() const {
     return m_selectedPointer;
 }
 
+float EXGradientPointerContainerWidget::currentPosition() const {
+    return this->m_currentPositionPointer->currentPosition();
+}
+
 void EXGradientPointerContainerWidget::paintEvent(QPaintEvent *event) {
     QWidget::paintEvent(event);
     QPainter p(this);
