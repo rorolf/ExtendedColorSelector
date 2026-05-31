@@ -211,6 +211,24 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         }
     });
 
+    connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigAddGradientPoint, this, [this](float position) {
+        int selectedChannel = this->m_tmpui->selectedMixChannel();
+        if (this->m_tmpui->selectedMixChannel() >= 0) {
+            this->m_colorPresets->addGradientPoint(selectedChannel, position);
+            this->m_mixer->onColorPresetChanged();
+            this->m_tmpui->onNewPresetSelected(m_colorPresets->activePresetIndex());
+        }
+    });
+
+    connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigRemoveGradientPoint, this, [this](int selectedGradientPoint) {
+        int selectedChannel = this->m_tmpui->selectedMixChannel();
+        if (this->m_tmpui->selectedMixChannel() >= 0) {
+            this->m_colorPresets->removeGradientPoint(selectedChannel, selectedGradientPoint);
+            this->m_mixer->onColorPresetChanged();
+            this->m_tmpui->onNewPresetSelected(m_colorPresets->activePresetIndex());
+        }
+    });
+
     //
     // connect(m_tmpui, &EXColorSelectorDock::sigMixFromColorsButtonPressed,
     //     this, [this]() {
