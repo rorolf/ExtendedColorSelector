@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "EXColorMixState.h"
+#include <EXUtils.h>
 
 
 //################################################################################
@@ -348,7 +349,7 @@ int EXGradientWidget::selectedGradientPoint() const {
 }
 
 void EXGradientWidget::usePreset(const EXColorPreset& preset, int channelIndex) {
-    if ((channelIndex<0) || (channelIndex>=preset.m_mixGradients.size())) { return; }
+    if (!inbounds(preset.m_mixGradients, channelIndex))  { return; }
 
     m_gradient = preset.m_mixGradients[channelIndex];
     m_gradientRectangle->setGradient(this->m_gradient);
