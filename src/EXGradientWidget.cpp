@@ -22,15 +22,15 @@
 //################################################################################
 
 
-EXGradientPointerWidget* EXGradientPointerWidget::fromGradient(EXColorGradient &gradient, float position)
+EXGradientPointerWidget* EXGradientPointerWidget::fromGradient(QRectF parentBody, EXColorGradient &gradient, float position)
 {
     QVector3D assignedColorRep = gradient.colorAt(position);
     QColor assignedColor = EXColorMixState::instance()->toQColor(assignedColorRep);
-    return new EXGradientPointerWidget(assignedColor, position, false);
+    return new EXGradientPointerWidget(parentBody, assignedColor, position, false);
 };
 
-EXGradientPointerWidget* EXGradientPointerWidget::CurrentPositionPointer() {
-    return new EXGradientPointerWidget(QColor(), 0.5f, true);
+EXGradientPointerWidget* EXGradientPointerWidget::CurrentPositionPointer(QRectF parentBody) {
+    return new EXGradientPointerWidget(parentBody, QColor(), 0.5f, true);
 }
 
 float EXGradientPointerWidget::currentPosition() const {
@@ -134,8 +134,8 @@ void EXGradientPointerWidget::setSelected(bool selected) {
 
 EXGradientPointerContainerWidget::EXGradientPointerContainerWidget(QWidget* parent)
 : QWidget(parent)
-, m_currentPositionPointer(EXGradientPointerWidget::CurrentPositionPointer())
-, m_pointers({ new EXGradientPointerWidget(QColor(), 0.0f), new EXGradientPointerWidget(QColor(255,255,255), 1.0f) })
+, m_currentPositionPointer(EXGradientPointerWidget::CurrentPositionPointer(this->rect()))
+, m_pointers({ new EXGradientPointerWidget(this->rect(), QColor(), 0.0f), new EXGradientPointerWidget(this->rect(), QColor(255,255,255), 1.0f) })
 { }
 
 void EXGradientPointerContainerWidget::setPointsFromGradient(EXColorGradient& gradient) {
@@ -145,9 +145,12 @@ void EXGradientPointerContainerWidget::setPointsFromGradient(EXColorGradient& gr
     const QVector<EXGradientColor>& interpolPoints = gradient.m_colorSpline.points();
     for (int k=0; k<interpolPoints.size(); ++k) {
         float pos = interpolPoints[k].m_positionOnGradient;
-        EXGradientPointerWidget* pointer = EXGradientPointerWidget::fromGradient(gradient, pos);
+        EXGradientPointerWidget* pointer = EXGradientPointerWidget::fromGradient(this->rect(), gradient, pos);
         m_pointers.push_back(pointer);
     }
+
+    int l1 = gradient.m_colorSpline.points().size(); int l2 = m_pointers.size();
+    qDebug() << QString("EXGradientWidget: incoming %1 point gradient; now has %2 pointers").arg(l1).arg(l2);
 
     this->update();
 }
@@ -213,16 +216,18 @@ void EXGradientPointerContainerWidget::onGradientPositionChanged(float signal) {
 
 void EXGradientPointerContainerWidget::addPointer(const QColor& assignedColor) {
     float position = m_currentPositionPointer->currentPosition();
-     EXGradientPointerWidget* newpointer = new EXGradientPointerWidget(assignedColor, position);
+     EXGradientPointerWidget* newpointer = new EXGradientPointerWidget(this->rect(), assignedColor, position);
      m_pointers.push_back(newpointer);
+    this->update();
 };
 
 void EXGradientPointerContainerWidget::removePointer() {
-    if ( (m_selectedPointer>=0) && (m_selectedPointer<m_pointers.size()) ) {
+    if ( inbounds(m_pointers, m_selectedPointer) ) {
         EXGradientPointerWidget* rmWidget = m_pointers[m_selectedPointer];
         m_pointers.remove(m_selectedPointer);
         m_selectedPointer = -1;
         delete rmWidget;
+        this->update();
     }
 };
 
@@ -325,14 +330,28 @@ EXGradientWidget::EXGradientWidget(QWidget* parent)
     QVBoxLayout* buttonLayout = new QVBoxLayout(this);
     this->m_addPointerButton = new QPushButton(this);
     m_addPointerButton->setText("+");
+    connect(m_addPointerButton, &QPushButton::pressed, this, [this]() {
+        emit this->sigAddGradientPoint(this->m_pointerContainer->currentPosition());
+    });
     this->m_deletePointerButton = new QPushButton(this);
     m_deletePointerButton->setText("x");
+    connect(m_deletePointerButton, &QPushButton::pressed, this, [this]() {
+        int selectedGradientPoint = this->m_pointerContainer->selectedGradientPoint();
+        if (selectedGradientPoint >= 0) {
+            this->m_pointerContainer->removePointer();
+            emit this->sigRemoveGradientPoint(selectedGradientPoint);
+        }
+    });
     buttonLayout->addWidget(m_addPointerButton);
     buttonLayout->addWidget(m_deletePointerButton);
 
     mainLayout->addLayout(gradientLayout);  mainLayout->setStretchFactor(gradientLayout,  3);
     mainLayout->addLayout(parameterLayout); mainLayout->setStretchFactor(parameterLayout, 1);
     mainLayout->addLayout(buttonLayout);    mainLayout->setStretchFactor(buttonLayout,    1);
+
+    // m_widgetDisableOverlay = new QWidget(this);
+    // m_widgetDisableOverlay->setMinimumWidth(this->width());
+    // m_widgetDisableOverlay->setMinimumHeight(this->height());
 };
 
 

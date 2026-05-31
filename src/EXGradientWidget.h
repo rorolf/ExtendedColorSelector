@@ -20,20 +20,23 @@
 class EXGradientPointerWidget
 {
     public:
-        explicit EXGradientPointerWidget(QColor assignedColor=QColor(), float position=-1.0f, float width=16)
+        explicit EXGradientPointerWidget(QRectF parentBody, QColor assignedColor=QColor(), float position=-1.0f, float width=16)
         : m_isCurrentPositionPointer(false)
         , m_isSelected(false)
         , m_assignedColor(assignedColor)
         , m_position(position)
         , m_width(width)
-        {  };
-        EXGradientPointerWidget(QColor assignedColor, float position, bool isCurrentPositionPointer)
+        { this->computeBodyShape(parentBody); };
+        EXGradientPointerWidget(QRectF parentBody, QColor assignedColor, float position, bool isCurrentPositionPointer)
         : m_isCurrentPositionPointer(isCurrentPositionPointer)
         , m_assignedColor(assignedColor), m_position(position)
-        { if (isCurrentPositionPointer) { m_width = 12; } else { m_width=16; } };
+        {
+            if (isCurrentPositionPointer) { m_width = 12; } else { m_width=16; }
+            this->computeBodyShape(parentBody);
+        };
         ~EXGradientPointerWidget() {};
-        static EXGradientPointerWidget* fromGradient(EXColorGradient &gradient, float position);
-        static EXGradientPointerWidget* CurrentPositionPointer();
+        static EXGradientPointerWidget* fromGradient(QRectF parentBody, EXColorGradient &gradient, float position);
+        static EXGradientPointerWidget* CurrentPositionPointer(QRectF parentBody);
 
         float currentPosition() const;
         void changeCurrentPosition(const QRectF container, float position);
@@ -145,6 +148,8 @@ class EXGradientWidget : public QWidget
         void onGradientPositionChanged(float signal);
 
     Q_SIGNALS:
+        void sigAddGradientPoint(float position);
+        void sigRemoveGradientPoint(int gradientPointIndex);
 
     protected:
 
@@ -159,6 +164,8 @@ class EXGradientWidget : public QWidget
 
         QPushButton* m_addPointerButton;
         QPushButton* m_deletePointerButton;
+
+        // QWidget* m_widgetDisableOverlay;
 };
 
 
