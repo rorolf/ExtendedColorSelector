@@ -476,6 +476,16 @@ void EXActionBus::startSignalLogging() {
         Q_UNUSED(this);
         qDebug() << "Signal:" << "sigPadPressed" << knob << "with value:" << value;
     });
+
+    connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigAddGradientPoint, this, [this](float position) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigAddGradientPoint with position:" << position;
+    });
+
+    connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigRemoveGradientPoint, this, [this](int selectedGradientPoint) {
+        Q_UNUSED(this);
+        qDebug() << "Signal:" << "sigRemoveGradientPoint with index:" << selectedGradientPoint;
+    });
 }
 
 
