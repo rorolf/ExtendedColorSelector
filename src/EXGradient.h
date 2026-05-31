@@ -165,20 +165,30 @@ public:
         return (((a * u) + b) * u + cc) * u + d;
     }
 
-    void insert(EXGradientColor& new_color) {
+    void insert(EXGradientColor new_color) {
+        int l0 = m_points.length();
         m_points.push_back(new_color);
         this->dedup();
-        this-> preprocess();
+        int l1 = m_points.length();
+        qDebug() << QString("Spline enlarged from %1 to %2 points").arg(l0).arg(l1);
+        this->preprocess();
     }
 
-    void remove(int pos) {
-        if ( (pos>=0) && (pos<m_points.size()) ) {
+    // Due to point movement, positionOnGradient is not necessarily unique
+    template <typename INT>
+    void remove(INT pos) {
+        static_assert(std::is_integral_v<INT>, "EXKBSpline::remove only accepts integer types");
+        int l0 = m_points.length();
+        if ( inbounds(m_points, pos) ) {
             m_points.remove(pos);
+            int l1 = m_points.length();
+            qDebug() << QString("Spline reduced from &1 to %2 points").arg(l0).arg(l1);
             this->preprocess();
         }
     }
 
     void remove(EXGradientColor& color) {
+        int l0 = m_points.length();
         for (int k=0; k<m_points.size(); ++k) {
             if (color.m_positionOnGradient == m_points[k].m_positionOnGradient) {
                 if (color.m_color == m_points[k].m_color) { m_points.remove(k); this->preprocess(); break; }
@@ -186,6 +196,8 @@ public:
                 break;
             }
         }
+        int l1 = m_points.length();
+        qDebug() << QString("Spline reduced from &1 to %2 points").arg(l0).arg(l1);
     }
 
 
