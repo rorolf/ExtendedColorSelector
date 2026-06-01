@@ -118,11 +118,13 @@ void EXColorPresetStore::addGradientPoint(int channelIndex, float position) {
     EXKBSpline* colorSpline = &this->m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
     QVector3D pointColor = colorSpline->at(position);
     colorSpline->insert(EXGradientColor(pointColor, position));
+    presetsChanged = true;
 }
 
 void EXColorPresetStore::removeGradientPoint(int channelIndex, int gradientpointIndex) {
     EXKBSpline* colorSpline = &this->m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
     colorSpline->remove(gradientpointIndex);
+    presetsChanged = true;
 }
 
 void EXColorPresetStore::moveGradientPoint(int channelIndex, int gradientpointIndex, float newPosition) {
