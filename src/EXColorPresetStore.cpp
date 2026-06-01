@@ -128,9 +128,9 @@ void EXColorPresetStore::removeGradientPoint(int channelIndex, int gradientpoint
 void EXColorPresetStore::moveGradientPoint(int channelIndex, int gradientpointIndex, float newPosition) {
     if (inbounds(m_colorMixPresets, m_activePreset)) {
         if (inbounds(m_colorMixPresets[m_activePreset].m_mixGradients, channelIndex)) {
-            EXKBSpline& colorSpline = m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
-            if (inbounds(colorSpline.points(), gradientpointIndex)) {
-                colorSpline.moveGradientPoint(gradientpointIndex, newPosition);
+            EXKBSpline* colorSpline = &m_colorMixPresets[m_activePreset].m_mixGradients[channelIndex].m_colorSpline;
+            if (inbounds(colorSpline->points(), gradientpointIndex)) {
+                colorSpline->moveGradientPoint(gradientpointIndex, newPosition);
             }
         }
     }
