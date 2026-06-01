@@ -14,7 +14,7 @@ struct EXGradientColor
         : m_color(0, 0, 0)
         , m_positionOnGradient(-1)
         {}
-        EXGradientColor(float pos)
+        explicit EXGradientColor(float pos)
         : m_color(0, 0, 0)
         , m_positionOnGradient(pos)
         {}
@@ -121,7 +121,9 @@ public:
 
     void moveGradientPoint(int gradientpointIndex, float newPosition) {
         if (inbounds(m_points, gradientpointIndex)) {
-            m_points[gradientpointIndex] = newPosition;
+            QVector3D clr = m_points[gradientpointIndex].m_color;
+            m_points[gradientpointIndex] = EXGradientColor(clr, newPosition);
+
             // must not deduplicate here, but sorting is necessary
             std::sort(m_points.begin(), m_points.end(), [](EXGradientColor& a, EXGradientColor& b) {
                 return a.m_positionOnGradient < b.m_positionOnGradient; // default ascending sort uses '<'
