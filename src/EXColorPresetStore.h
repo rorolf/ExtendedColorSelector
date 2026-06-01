@@ -34,6 +34,7 @@ class EXColorPreset
         // TODO: How to replace the colorspace pointer?
         //const KoColorSpace *m_currentColorSpace;
 
+        QString m_presetName;
         std::array<QVector3D, 8> m_ingredientMixColors;
         std::array<bool, 8> m_useGradients;
         std::array<EXColorGradient, 8> m_mixGradients;

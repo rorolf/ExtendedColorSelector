@@ -27,6 +27,7 @@ EXColorPresetStore *EXColorPresetStore::instance()
 }
 
 static QString groupname() { return  "EXColorPresets" ".activePreset"; }
+static QString entryname0(int k) {return  "EXColorPresets" ".Preset" + QString::number(k) + ".presetName"; }
 static QString entryname1(int k) { return  "EXColorPresets" ".Preset" + QString::number(k) + ".colorModel"; }
 static QString entryname2(int k) { return  "EXColorPresets" ".Preset" + QString::number(k) + ".mixFromGradients"; }
 static QString entryname3(int k) { return  "EXColorPresets" ".Preset" + QString::number(k) + ".ingredientMixColors"; }
@@ -43,6 +44,10 @@ EXColorPresetStore::EXColorPresetStore()
     // A sensible solution with overloading QtDataStream would be too much boilerplate and probably still brittle
     std::array<EXColorPreset, 8> colorMixPresets = {};
     for (size_t k1=0; k1<8; ++k1) {
+
+        QString presetName = settings.value(entryname0(k1), "").toString();
+        if (presetName.isEmpty()) { presetName = QString("Preset %1").arg(k1); }
+        colorMixPresets[k1].m_presetName = presetName;
 
         QString colorModelName = settings.value(entryname1(k1)).toString();
 
@@ -87,6 +92,27 @@ EXColorPresetStore::EXColorPresetStore()
         settings.endArray();
 
     }
+
+    // make sure names are unique
+
+    bool nameCollision = true;
+    while (nameCollision) {
+        nameCollision = false;
+        std::sort(colorMixPresets.begin(), colorMixPresets.end(), [](EXColorPreset& a, EXColorPreset& b) {
+            return a.m_presetName < b.m_presetName; // default ascending sort uses '<'
+        });
+        for (size_t k1=0; k1<colorMixPresets.size(); ++k1) {
+            for (size_t k2=k1+1; k2<colorMixPresets.size(); ++k2) {
+                QString nm1 = colorMixPresets[k1].m_presetName;
+                QString nm2 = colorMixPresets[k2].m_presetName;
+                if (nm1 == nm2) {
+                    nameCollision = true;
+                    nm2 = nm2 + " (2)";
+                }
+            }
+        }
+    }
+
     m_colorMixPresets = colorMixPresets;
 
     connect(saveSettingsDeferrer, &QTimer::timeout, this, [this]() {
@@ -150,6 +176,7 @@ void EXColorPresetStore::writeSettings()
     size_t k1max = m_colorMixPresets.size();
     for (size_t k1=0; k1<k1max; ++k1)
     {
+        settings.setValue(entryname0(k1), m_colorMixPresets[k1].m_presetName);
         settings.setValue(entryname1(k1), m_colorMixPresets[k1].m_colorModel->displayName());
 
         settings.beginWriteArray(entryname3(k1));
