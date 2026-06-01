@@ -190,13 +190,15 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     connect(this, &EXActionBus::sigKnobTurned, m_mixer, [this](int deviceIndex, int value) {
         float newWeight = (float)(value)/(float)(127);
-        if (m_colorPresets->activePresetUsesGradient(deviceIndex) &&
-            (m_tmpui->selectedGradientPoint() >= 0)
-        ) {
-            int gradientpointIndex = m_tmpui->selectedGradientPoint();
-            m_colorPresets->moveGradientPoint(deviceIndex, gradientpointIndex, newWeight);
-            m_mixer->onColorPresetChanged();
-            m_tmpui->m_gradientWidget->usePreset(m_colorPresets->activePreset(), deviceIndex);
+        if (m_colorPresets->activePresetUsesGradient(deviceIndex)) {
+            if (m_tmpui->selectedGradientPoint() >= 0) {
+                int gradientpointIndex = m_tmpui->selectedGradientPoint();
+                m_colorPresets->moveGradientPoint(deviceIndex, gradientpointIndex, newWeight);
+                m_mixer->onColorPresetChanged();
+                m_tmpui->m_gradientWidget->usePreset(m_colorPresets->activePreset(), deviceIndex);
+            } else {
+                m_tmpui->m_gradientWidget->onGradientPositionChanged(newWeight);
+            }
         } else {
             this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);
         }
