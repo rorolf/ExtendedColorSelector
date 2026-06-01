@@ -198,6 +198,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
                 m_tmpui->m_gradientWidget->usePreset(m_colorPresets->activePreset(), deviceIndex);
             } else {
                 m_tmpui->m_gradientWidget->onGradientPositionChanged(newWeight);
+                this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);
             }
         } else {
             this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);

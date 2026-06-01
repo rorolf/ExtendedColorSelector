@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <kis_canvas2.h>
 #include <kis_display_color_converter.h>
+#include <qmath.h>
 #include <qvector.h>
 #include <qvector3d.h>
 
@@ -90,11 +91,18 @@ void EXColorMixState::mixColors()
 
     QVector3D out_color = m_kritaBaseColor;
 
+    if (m_useGradientColorIndex>=0) {
+        out_color = m_mixGradients[m_useGradientColorIndex].colorAt(m_mixIngredientColorWeights[m_useGradientColorIndex]);
+        qDebug() << QString("Using gradient color for mixing (%1/%2/%3)")
+                        .arg(out_color[0]).arg(out_color[1]).arg(out_color[2]);
+    }
+
     QVector3D mixColor = QVector3D(0,0,0);
     float totalMixWight = 0.0;
     float finalMixWeight = 0.0;
     for (size_t k=0; k<m_mixIngredientColors.size(); ++k)
     {
+        if (m_useGradients[k]) continue;
         float mixWeight = m_mixIngredientColorWeights[k];
         totalMixWight += mixWeight;
         finalMixWeight = qMax(finalMixWeight, mixWeight);
