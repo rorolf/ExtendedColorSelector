@@ -222,8 +222,8 @@ void EXColorPresetStore::onMixColorChanged(int clrChannelIndex, QVector3D newClr
 
 void EXColorPresetStore::onGradientColorChanged(int clrChannelIndex, int gradientPointIndex, const QVector3D& newlyPickedColor)
 {
-    EXKBSpline colorSpline = m_colorMixPresets[m_activePreset].m_mixGradients[clrChannelIndex].m_colorSpline;
-    colorSpline.replaceColor(gradientPointIndex, newlyPickedColor);
+    EXKBSpline* colorSpline = &m_colorMixPresets[m_activePreset].m_mixGradients[clrChannelIndex].m_colorSpline;
+    colorSpline->replaceColor(gradientPointIndex, newlyPickedColor);
     presetsChanged = true;
 }
 
