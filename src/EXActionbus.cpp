@@ -202,14 +202,14 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         }
     });
 
-    connect(this, &EXActionBus::sigKnobTurned, uiCapture, [this, uiCapture](int deviceIndex, int value) {
-        int channelIndex=deviceIndex;
-        if (this->m_colorPresets->activePresetUsesGradient(channelIndex) &&
-            (uiCapture->selectedMixChannel() == deviceIndex)) {
-            float signal = float(value)/float(127);
-            uiCapture->m_gradientWidget->onGradientPositionChanged(signal);
-        }
-    });
+    // connect(this, &EXActionBus::sigKnobTurned, uiCapture, [this, uiCapture](int deviceIndex, int value) {
+    //     int channelIndex=deviceIndex;
+    //     if (this->m_colorPresets->activePresetUsesGradient(channelIndex) &&
+    //         (uiCapture->selectedMixChannel() == deviceIndex)) {
+    //         float signal = float(value)/float(127);
+    //         uiCapture->m_gradientWidget->onGradientPositionChanged(signal);
+    //     }
+    // });
 
     connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigAddGradientPoint, this, [this](float position) {
         int selectedChannel = this->m_tmpui->selectedMixChannel();
