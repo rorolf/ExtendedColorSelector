@@ -244,6 +244,7 @@ EXGradientRectangleWidget::EXGradientRectangleWidget(QWidget* parent)
         if (!m_gradientImageBase.isNull() && m_sizeChanged) {
             m_gradientImageScaled = m_gradientImageBase.scaled(this->width(), this->height());
             m_sizeChanged = false;
+            this->update();
         }
     });
     this->m_repaintTimer.start();
@@ -259,6 +260,7 @@ EXGradientRectangleWidget::EXGradientRectangleWidget(QWidget* parent, const EXCo
         if (!m_gradientImageBase.isNull() && m_sizeChanged) {
             m_gradientImageScaled = m_gradientImageBase.scaled(this->width(), this->height());
             m_sizeChanged = false;
+            this->update();
         }
     });
     this->m_repaintTimer.start();
