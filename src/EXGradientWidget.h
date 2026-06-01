@@ -78,6 +78,8 @@ class EXGradientPointerContainerWidget : public QWidget
         void addPointer(const QColor& assignedColor);
         void removePointer();
         void adjustColor(QColor& assignedColor);
+        void disable();
+        void enable();
 
     public Q_SLOTS:
         void onGradientPositionChanged(float signal);
@@ -93,6 +95,7 @@ class EXGradientPointerContainerWidget : public QWidget
         EXGradientPointerWidget* m_currentPositionPointer;
         QVector<EXGradientPointerWidget*> m_pointers;
         int m_selectedPointer = -1;
+        bool m_active;
 };
 
 
@@ -109,6 +112,8 @@ class EXGradientRectangleWidget : public QWidget
         EXGradientRectangleWidget(QWidget* parent, const EXColorGradient& gradient);
 
         void setGradient(const EXColorGradient& gradient);
+        void disable();
+        void enable();
 
     public Q_SLOTS:
 
@@ -125,6 +130,7 @@ class EXGradientRectangleWidget : public QWidget
 
         QTimer m_repaintTimer;
         bool m_sizeChanged = false;
+        bool m_active;
 };
 
 //################################################################################
@@ -141,6 +147,8 @@ class EXGradientWidget : public QWidget
 
         int selectedGradientPoint() const;
         void usePreset(const EXColorPreset& preset, int channelIndex);
+        void disable();
+        void enable();
 
     public Q_SLOTS:
         void onGradientSelected(const EXColorPreset& preset, int channelIndex);
@@ -155,6 +163,7 @@ class EXGradientWidget : public QWidget
 
     private:
         EXColorGradient m_gradient;
+        int m_channelIndex;
         EXGradientRectangleWidget* m_gradientRectangle;
         EXGradientPointerContainerWidget* m_pointerContainer;
 

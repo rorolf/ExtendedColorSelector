@@ -163,15 +163,33 @@ float EXGradientPointerContainerWidget::currentPosition() const {
     return this->m_currentPositionPointer->currentPosition();
 }
 
+void EXGradientPointerContainerWidget::disable() {
+    m_active = false;
+    this->blockSignals(true);
+    this->update();
+}
+
+void EXGradientPointerContainerWidget::enable() {
+    m_active = true;
+    this->blockSignals(false);
+    this->update();
+}
+
 void EXGradientPointerContainerWidget::paintEvent(QPaintEvent *event) {
     QWidget::paintEvent(event);
     QPainter p(this);
-    p.setPen(QColor(0,64,64));
-    p.setBrush(QColor(0,220,220));
-    p.drawRect(this->rect().adjusted(1, 1, -1, -1));
+    if (m_active) {
+        p.setPen(QColor(0,64,64));
+        p.setBrush(QColor(0,220,220));
+        p.drawRect(this->rect().adjusted(1, 1, -1, -1));
 
-    for (EXGradientPointerWidget* pointer : m_pointers) { pointer->paintSelf(p); }
-    m_currentPositionPointer->paintSelf(p);
+        for (EXGradientPointerWidget* pointer : m_pointers) { pointer->paintSelf(p); }
+        m_currentPositionPointer->paintSelf(p);
+    } else {
+        p.setPen(QColor(96,96,96));
+        p.setBrush(QColor(64,64,64));
+        p.drawRect(this->rect().adjusted(1, 1, -1, -1));
+    }
 }
 
 void EXGradientPointerContainerWidget::resizeEvent(QResizeEvent *event) {
@@ -284,6 +302,18 @@ void EXGradientRectangleWidget::setGradient(const EXColorGradient& colorGradient
     this->update();
 }
 
+void EXGradientRectangleWidget::disable() {
+    m_active = false;
+    m_sizeChanged = true;
+    this->blockSignals(true);
+}
+
+void EXGradientRectangleWidget::enable() {
+    m_active = true;
+    m_sizeChanged = true;
+    this->blockSignals(false);
+}
+
 void EXGradientRectangleWidget::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
     m_sizeChanged = true;
@@ -292,12 +322,17 @@ void EXGradientRectangleWidget::resizeEvent(QResizeEvent *event) {
 void EXGradientRectangleWidget::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
-    if (!m_gradientImageScaled.isNull()) {
-        p.drawImage(0, 0, m_gradientImageScaled);
+    if (m_active) {
+        if (!m_gradientImageScaled.isNull()) {
+            p.drawImage(0, 0, m_gradientImageScaled);
+        } else {
+            p.setBrush(QColor(128,0,128));
+        }
+        p.setPen(QColor(128,128,0));
     } else {
-        p.setBrush(QColor(128,0,128));
+        p.setPen(QColor(96,96,96));
+        p.setBrush(QColor(64,64,64));
     }
-    p.setPen(QColor(128,128,0));
     p.drawRect(this->rect().adjusted(1, 1, -1, -1));
 }
 
@@ -309,6 +344,7 @@ EXGradientWidget::EXGradientWidget(QWidget* parent)
 : QWidget(parent)
 {
     this->m_gradient = EXColorGradient();
+    this->m_channelIndex = -1;
 
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
 
@@ -333,13 +369,15 @@ EXGradientWidget::EXGradientWidget(QWidget* parent)
     this->m_addPointerButton = new QPushButton(this);
     m_addPointerButton->setText("+");
     connect(m_addPointerButton, &QPushButton::pressed, this, [this]() {
-        emit this->sigAddGradientPoint(this->m_pointerContainer->currentPosition());
+        if (m_channelIndex >= 0) {
+            emit this->sigAddGradientPoint(this->m_pointerContainer->currentPosition());
+        }
     });
     this->m_deletePointerButton = new QPushButton(this);
     m_deletePointerButton->setText("x");
     connect(m_deletePointerButton, &QPushButton::pressed, this, [this]() {
         int selectedGradientPoint = this->m_pointerContainer->selectedGradientPoint();
-        if (selectedGradientPoint >= 0) {
+        if ((m_channelIndex>=0) && (selectedGradientPoint >= 0)) {
             this->m_pointerContainer->removePointer();
             emit this->sigRemoveGradientPoint(selectedGradientPoint);
         }
@@ -373,9 +411,22 @@ void EXGradientWidget::usePreset(const EXColorPreset& preset, int channelIndex) 
     if (!inbounds(preset.m_mixGradients, channelIndex))  { return; }
 
     m_gradient = preset.m_mixGradients[channelIndex];
+    m_channelIndex = channelIndex;
     m_gradientRectangle->setGradient(this->m_gradient);
     m_pointerContainer->setPointsFromGradient(this->m_gradient);
 };
+
+void EXGradientWidget::disable() {
+    this->m_gradientRectangle->disable();
+    this->m_pointerContainer->disable();
+    this->blockSignals(true);
+}
+
+void EXGradientWidget::enable() {
+    this->m_gradientRectangle->enable();
+    this->m_pointerContainer->enable();
+    this->blockSignals(false);
+}
 
 void EXGradientWidget::onGradientSelected(const EXColorPreset& preset, int channelIndex) {
     this->usePreset(preset,channelIndex);

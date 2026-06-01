@@ -111,9 +111,9 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         uiCapture->m_mixFromGradientButton->blockSignals(false);
 
         if (useGradient) {
-            uiCapture->m_gradientWidget->show();
             uiCapture->m_gradientWidget->usePreset(m_colorPresets->activePreset(), newChannel);
-        } else { uiCapture->m_gradientWidget->hide(); }
+            uiCapture->m_gradientWidget->enable();
+        } else { uiCapture->m_gradientWidget->disable(); }
     });
 
 
