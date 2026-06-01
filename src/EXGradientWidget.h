@@ -74,7 +74,7 @@ class EXGradientPointerContainerWidget : public QWidget
         int selectedGradientPoint() const;
         float currentPosition() const;
 
-        void setPointsFromGradient(EXColorGradient& gradient);
+        void setPointsFromGradient(EXColorGradient& gradient, bool deselectPointer);
         void addPointer(const QColor& assignedColor);
         void removePointer();
         void adjustColor(QColor& assignedColor);
@@ -162,6 +162,7 @@ class EXGradientWidget : public QWidget
     protected:
 
     private:
+        QString m_presetName;
         EXColorGradient m_gradient;
         int m_channelIndex;
         EXGradientRectangleWidget* m_gradientRectangle;

@@ -138,8 +138,10 @@ EXGradientPointerContainerWidget::EXGradientPointerContainerWidget(QWidget* pare
 , m_pointers({ new EXGradientPointerWidget(this->rect(), QColor(), 0.0f), new EXGradientPointerWidget(this->rect(), QColor(255,255,255), 1.0f) })
 { }
 
-void EXGradientPointerContainerWidget::setPointsFromGradient(EXColorGradient& gradient) {
-    m_selectedPointer = -1;
+void EXGradientPointerContainerWidget::setPointsFromGradient(EXColorGradient& gradient, bool deselectPointer) {
+    if (deselectPointer || !inbounds(gradient.m_colorSpline.points(), m_selectedPointer)) {
+        m_selectedPointer = -1;
+    }
     for (EXGradientPointerWidget* pointer : m_pointers) { delete pointer; }
     m_pointers.clear();
     const QVector<EXGradientColor>& interpolPoints = gradient.m_colorSpline.points();
@@ -343,6 +345,7 @@ void EXGradientRectangleWidget::paintEvent(QPaintEvent *)
 EXGradientWidget::EXGradientWidget(QWidget* parent)
 : QWidget(parent)
 {
+    this->m_presetName = "";
     this->m_gradient = EXColorGradient();
     this->m_channelIndex = -1;
 
@@ -410,10 +413,12 @@ int EXGradientWidget::selectedGradientPoint() const {
 void EXGradientWidget::usePreset(const EXColorPreset& preset, int channelIndex) {
     if (!inbounds(preset.m_mixGradients, channelIndex))  { return; }
 
+    bool presetChanged = m_presetName != preset.m_presetName;
+    m_presetName = preset.m_presetName;
     m_gradient = preset.m_mixGradients[channelIndex];
     m_channelIndex = channelIndex;
     m_gradientRectangle->setGradient(this->m_gradient);
-    m_pointerContainer->setPointsFromGradient(this->m_gradient);
+    m_pointerContainer->setPointsFromGradient(this->m_gradient, presetChanged);
 };
 
 void EXGradientWidget::disable() {

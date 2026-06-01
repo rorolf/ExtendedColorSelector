@@ -121,8 +121,27 @@ public:
 
     void moveGradientPoint(int gradientpointIndex, float newPosition) {
         if (inbounds(m_points, gradientpointIndex)) {
-            QVector3D clr = m_points[gradientpointIndex].m_color;
-            m_points[gradientpointIndex] = EXGradientColor(clr, newPosition);
+
+            // find if there would be a dupiicate time, and if there is, swap both points instead
+            int preExist = -1;
+            for (int k=0; k<m_points.size(); ++k) {
+                if (newPosition == m_points[k].m_positionOnGradient) {
+                    preExist = k; break;
+                }
+            }
+            if (preExist<0) {
+                QVector3D clr = m_points[gradientpointIndex].m_color;
+                m_points[gradientpointIndex] = EXGradientColor(clr, newPosition);
+            } else {
+                QVector3D clr1 = m_points[preExist].m_color;
+                float pos1 = m_points[preExist].m_positionOnGradient; // == newPosition
+                QVector3D clr2 = m_points[gradientpointIndex].m_color;
+                float pos2 = m_points[gradientpointIndex].m_positionOnGradient;
+
+                m_points[preExist] = EXGradientColor(clr1, pos2);
+                m_points[gradientpointIndex] = EXGradientColor(clr2, pos1);
+            }
+
 
             // must not deduplicate here, but sorting is necessary
             std::sort(m_points.begin(), m_points.end(), [](EXGradientColor& a, EXGradientColor& b) {
