@@ -122,6 +122,12 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         } else { uiCapture->m_gradientWidget->disable(); }
     });
 
+    connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigGradientPointerSelected,
+            this, [this, uiCapture](int gradientPointIndex) {
+        Q_UNUSED(uiCapture);
+        this->m_mixer->blockMixing(gradientPointIndex>=0);
+    });
+
 
     //TODO: Change ColorModel when ColorSpace changes
     connect(m_mixer.data(), &EXColorMixState::sigColorSpaceChanged, uiCapture, [this, uiCapture, cMS](const KoColorSpace *colorSpace) {
