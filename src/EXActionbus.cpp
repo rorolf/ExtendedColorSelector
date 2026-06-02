@@ -52,12 +52,9 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     connect(m_mixer.data(), &EXColorMixState::sigColorChanged, uiCapture, [this, uiCapture, mixerCapture](QVector3D newClr) {
         int channelIndex = uiCapture->selectedMixChannel();
-        if (channelIndex < 0) {
-            QColor newQClr = mixerCapture->toQColor(newClr);
-            uiCapture->m_colorPatchPopup->updateColor(newQClr);
-            uiCapture->m_mixResultColorPatch->m_color = newQClr;
-            uiCapture->m_mixResultColorPatch->update();
-        }
+        QColor newQClr = mixerCapture->toQColor(newClr);
+        uiCapture->m_mixResultColorPatch->m_color = newQClr;
+        uiCapture->m_mixResultColorPatch->update();
     });
 
     connect(cMS, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -332,8 +329,10 @@ void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
     int selectedGradientPoint = m_ui->selectedGradientPoint();
     if (selectedGradientPoint>=0) {
         m_colorPresets->onGradientColorChanged(selectedClrPatch, selectedGradientPoint, newlyPickedColor);
+    } else {
+        m_colorPresets->onMixColorChanged(selectedClrPatch, newlyPickedColor);
     }
-    m_colorPresets->onMixColorChanged(selectedClrPatch, newlyPickedColor);
+
     m_ui->onNewPresetSelected(activePreset);
     //TODO: without informing EXChannelPlane, this whacks the color selector
     m_mixer->onColorPresetChanged();
