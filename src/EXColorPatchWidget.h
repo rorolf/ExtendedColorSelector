@@ -11,7 +11,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 
-//#include "EXEditable.h"
+#include "EXGradient.h"
 
 class EXColorPatchWidget : public QWidget
 {
@@ -22,6 +22,9 @@ public:
     QColor m_color;
     bool m_selected = false;
     bool m_depictsGradient = false;
+
+    void loadColorFromRaw(QColor newClr);
+    void loadColorFromGradient(const EXColorGradient& gradient);
 
 Q_SIGNALS:
     void sigClicked();

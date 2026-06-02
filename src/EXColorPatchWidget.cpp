@@ -9,6 +9,7 @@
 #include <qnamespace.h>
 
 #include "EXColorPatchWidget.h"
+#include "EXColorMixState.h"
 
 EXColorPatchWidget::EXColorPatchWidget(QWidget *parent)
     : QWidget(parent)
@@ -23,6 +24,20 @@ EXColorPatchWidget::EXColorPatchWidget(QWidget *parent)
     //
     // mainLayout->addWidget(m_currentColorBox, 1);
     // mainLayout->addWidget(m_lastColorBox, 1);
+}
+
+void EXColorPatchWidget::loadColorFromGradient(const EXColorGradient& gradient) {
+    QVector3D gradClr = gradient.colorAt(0.5);
+    QColor newClr = EXColorMixState::instance()->toQColor(gradClr);
+    this->m_color = newClr;
+    m_depictsGradient = true;
+    this->update();
+}
+
+void EXColorPatchWidget::loadColorFromRaw(QColor newClr) {
+    m_color = newClr;
+    m_depictsGradient = false;
+    this->update();
 }
 
 void EXColorPatchWidget::paintEvent(QPaintEvent *)
