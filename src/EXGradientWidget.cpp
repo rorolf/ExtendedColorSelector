@@ -216,7 +216,7 @@ void EXGradientPointerContainerWidget::mousePressEvent(QMouseEvent *event)
         if (m_pointers[k]->contains(queryPos)) clickedPointer = k;
     }
     qDebug() << QString("Hit event calculations ended with: %1").arg(clickedPointer);
-    if (clickedPointer < 0) {
+    if ((clickedPointer < 0) || (clickedPointer == m_selectedPointer)) {
         if (m_selectedPointer >= 0) { m_pointers[m_selectedPointer]->setSelected(false); }
         m_selectedPointer = -1;
     } else {
