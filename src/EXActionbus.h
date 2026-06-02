@@ -28,8 +28,7 @@ class EXActionBus : public QObject, public KisShared
         void initializeAndConnectToEXS(EXColorSelectorDock* ui);
         static EXActionBus* instance();
 
-        EXColorMixerDock* m_ui;
-        EXColorSelectorDock* m_tmpui;
+        EXColorSelectorDock* m_ui;
         //EXMIDIPanelWidgetSP m_midiUi;
         MidiListener* m_midiListener;
         EXMIDIMapperPresetControl* m_mapper;

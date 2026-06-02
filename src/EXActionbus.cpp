@@ -31,7 +31,6 @@ EXActionBus* EXActionBus::instance()
 EXActionBus::EXActionBus(QObject*parent)
     : QObject(parent)
     , m_ui(nullptr)
-    , m_tmpui(nullptr)
     //, m_midiUi(ui->m_midiPanel)
     , m_midiListener(new MidiListener)
     , m_mapper(new EXMIDIMapperPresetControl)
@@ -41,13 +40,13 @@ EXActionBus::EXActionBus(QObject*parent)
 {}
 
 void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
-    m_tmpui = ui;
+    m_ui = ui;
 
-    EXColorSelectorDock* uiCapture = m_tmpui;
+    EXColorSelectorDock* uiCapture = m_ui;
     EXColorMixStateSP mixerCapture = m_mixer;
     QComboBox* presetSelector = uiCapture->m_presetSelector;
     QComboBox* cMS = uiCapture->m_colorModelSelector;
-    LogPanelWidget* logPanelCapture = m_tmpui->m_midiPanel->logPanel;
+    LogPanelWidget* logPanelCapture = m_ui->m_midiPanel->logPanel;
 
     connect(m_mixer.data(), &EXColorMixState::sigKritaBaseColorChanged, this, &EXActionBus::onKritaBaseColorChanged);
 
@@ -79,7 +78,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         qDebug() << "A new preset was selected via UI";
         m_colorPresets->onPresetSelected(newIndex);
         m_mixer->onColorPresetChanged();
-        this->m_tmpui->loadColorsFromPreset(newIndex);
+        this->m_ui->loadColorsFromPreset(newIndex);
     });
 
     connect(uiCapture, &EXColorSelectorDock::sigMixFromColorsButtonPressed, this, [this, uiCapture]() {
@@ -166,16 +165,16 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         uiCapture->onNewPresetSelected(activePreset);
     });
 
-    connect(this, &EXActionBus::sigInputPortsChanged, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
-    connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, m_midiListener, [this](QString portName) {
+    connect(this, &EXActionBus::sigInputPortsChanged, m_ui->m_midiPanel, &EXMIDIPanelWidget::onPortsAvailable);
+    connect(this->m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigPortSelected, m_midiListener, [this](QString portName) {
         m_midiListener->startListeningTo(portName);
     });
 
-    MappingTableWidget* mappingTableCapture = m_tmpui->m_midiPanel->mappingTable;
+    MappingTableWidget* mappingTableCapture = m_ui->m_midiPanel->mappingTable;
     connect(m_midiListener, &MidiListener::sigNowListeningTo, mappingTableCapture, &MappingTableWidget::onMidiDeviceChanged);
 
 
-    connect(m_midiListener, &MidiListener::sigErrorOccurred, m_tmpui->m_midiPanel, &EXMIDIPanelWidget::onError);
+    connect(m_midiListener, &MidiListener::sigErrorOccurred, m_ui->m_midiPanel, &EXMIDIPanelWidget::onError);
     connect(m_midiListener, &MidiListener::sigMidiMessageArrived, logPanelCapture, [logPanelCapture](const MidiEvent& evt) {
         logPanelCapture->onMidiMessage(evt);
     });
@@ -186,7 +185,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     connect(m_midiListener, &MidiListener::sigMidiMessageArrived, this, &EXActionBus::onMidiMessage);
 
-    connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigMappingsEdited, this, [this, mappingTableCapture]() {
+    connect(this->m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigMappingsEdited, this, [this, mappingTableCapture]() {
         QVector<MappingEntry> NewMappings = mappingTableCapture->collectMappingsFromTable();
         this->m_mapper->setMappings(NewMappings);
         qDebug() << "EXMIDIMapperPresetControl: Updated mappings";
@@ -196,13 +195,13 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     connect(this, &EXActionBus::sigKnobTurned, m_mixer, [this](int deviceIndex, int value) {
         float newWeight = (float)(value)/(float)(127);
         if (m_colorPresets->activePresetUsesGradient(deviceIndex)) {
-            if (m_tmpui->selectedGradientPoint() >= 0) {
-                int gradientpointIndex = m_tmpui->selectedGradientPoint();
+            if (m_ui->selectedGradientPoint() >= 0) {
+                int gradientpointIndex = m_ui->selectedGradientPoint();
                 m_colorPresets->moveGradientPoint(deviceIndex, gradientpointIndex, newWeight);
                 m_mixer->onColorPresetChanged();
-                m_tmpui->m_gradientWidget->usePreset(m_colorPresets->activePreset(), deviceIndex);
+                m_ui->m_gradientWidget->usePreset(m_colorPresets->activePreset(), deviceIndex);
             } else {
-                m_tmpui->m_gradientWidget->onGradientPositionChanged(newWeight);
+                m_ui->m_gradientWidget->onGradientPositionChanged(newWeight);
                 this->m_mixer->onIngredientColorWeightChanged(deviceIndex, newWeight);
             }
         } else {
@@ -220,20 +219,20 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     // });
 
     connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigAddGradientPoint, this, [this](float position) {
-        int selectedChannel = this->m_tmpui->selectedMixChannel();
-        if (this->m_tmpui->selectedMixChannel() >= 0) {
+        int selectedChannel = this->m_ui->selectedMixChannel();
+        if (this->m_ui->selectedMixChannel() >= 0) {
             this->m_colorPresets->addGradientPoint(selectedChannel, position);
             this->m_mixer->onColorPresetChanged();
-            this->m_tmpui->onNewPresetSelected(m_colorPresets->activePresetIndex());
+            this->m_ui->onNewPresetSelected(m_colorPresets->activePresetIndex());
         }
     });
 
     connect(uiCapture->m_gradientWidget, &EXGradientWidget::sigRemoveGradientPoint, this, [this](int selectedGradientPoint) {
-        int selectedChannel = this->m_tmpui->selectedMixChannel();
-        if (this->m_tmpui->selectedMixChannel() >= 0) {
+        int selectedChannel = this->m_ui->selectedMixChannel();
+        if (this->m_ui->selectedMixChannel() >= 0) {
             this->m_colorPresets->removeGradientPoint(selectedChannel, selectedGradientPoint);
             this->m_mixer->onColorPresetChanged();
-            this->m_tmpui->onNewPresetSelected(m_colorPresets->activePresetIndex());
+            this->m_ui->onNewPresetSelected(m_colorPresets->activePresetIndex());
         }
     });
 
@@ -290,7 +289,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
     } else {
         this->currentPortName = "";
     }
-    m_tmpui->m_midiPanel->onPortSelected();
+    m_ui->m_midiPanel->onPortSelected();
     //
     // this->portRefreshTimer = new QTimer(this);
     // connect(portRefreshTimer, &QTimer::timeout, this, &EXActionBus::onRefreshMidiPorts);
@@ -298,19 +297,19 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
 
     startSignalLogging();
 
-    m_tmpui->m_midiPanel->loadSettings();
+    m_ui->m_midiPanel->loadSettings();
     qDebug() << "Loading initial Colors...";
-    m_tmpui->loadColorsFromPreset(m_colorPresets->activePresetIndex());
+    m_ui->loadColorsFromPreset(m_colorPresets->activePresetIndex());
     QString currentColorModelName = m_colorPresets->activePreset().m_colorModel->displayName();
-    int cCMIndex = m_tmpui->m_colorModelSelector->findText(currentColorModelName);
-    if (cCMIndex >= 0) { m_tmpui->m_colorModelSelector->setCurrentIndex(cCMIndex); }
+    int cCMIndex = m_ui->m_colorModelSelector->findText(currentColorModelName);
+    if (cCMIndex >= 0) { m_ui->m_colorModelSelector->setCurrentIndex(cCMIndex); }
 }
 
 void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
 
     qDebug() << "ActionBus fired onKritaBaseColorChanged";
     //Option A: No responsive UI element had been selected
-    int selectedClrPatch = this->m_tmpui->selectedMixChannel();
+    int selectedClrPatch = this->m_ui->selectedMixChannel();
     if (selectedClrPatch < 0) { return; }
     qDebug() << "ColorPatch selected:" << selectedClrPatch;
     // Option B a Clr Patch has been selected; active color preset will now be modified
@@ -322,12 +321,12 @@ void EXActionBus::onKritaBaseColorChanged(const QVector3D& newlyPickedColor) {
     qDebug() << "Preset selected:" << activePreset;
 
     // m_colorPresets->m_colorMixPresets[activePreset].m_ingredientMixColors[selectedClrPatch] = newlyPickedColor;
-    int selectedGradientPoint = m_tmpui->selectedGradientPoint();
+    int selectedGradientPoint = m_ui->selectedGradientPoint();
     if (selectedGradientPoint>=0) {
         m_colorPresets->onGradientColorChanged(selectedClrPatch, selectedGradientPoint, newlyPickedColor);
     }
     m_colorPresets->onMixColorChanged(selectedClrPatch, newlyPickedColor);
-    m_tmpui->onNewPresetSelected(activePreset);
+    m_ui->onNewPresetSelected(activePreset);
     //TODO: without informing EXChannelPlane, this whacks the color selector
     m_mixer->onColorPresetChanged();
 }
@@ -401,7 +400,7 @@ void EXActionBus::onMidiMessage(const MidiEvent& evt)
 
 void EXActionBus::startSignalLogging() {
 
-    EXColorSelectorDock* uiCapture = m_tmpui;
+    EXColorSelectorDock* uiCapture = m_ui;
     QComboBox* presetSelector = uiCapture->m_presetSelector;
     QComboBox* cMS = uiCapture->m_colorModelSelector;
 
@@ -470,7 +469,7 @@ void EXActionBus::startSignalLogging() {
         qDebug() << "Signal:" << "sigLogMessage";
     });
 
-    connect(this->m_tmpui->m_midiPanel->mappingTable, &MappingTableWidget::sigMappingsEdited, this, [this]() {
+    connect(this->m_ui->m_midiPanel->mappingTable, &MappingTableWidget::sigMappingsEdited, this, [this]() {
         Q_UNUSED(this);
         qDebug() << "Signal:" << "sigMappingsEdited";
     });
