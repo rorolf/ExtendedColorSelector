@@ -384,20 +384,17 @@ void EXColorSelectorDock::onNewPresetSelected(int activePreset) {
 void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
     EXColorPreset newPreset = EXColorPresetStore::instance()->activePreset();
 
-    qDebug() << "Loading Colors from Preset" << activePreset;
     for (size_t k=0; k<m_colorPatchWidgets.size(); ++k) {
         if (k == 4) continue;
-        int k2 = k - (size_t)(k>4);
-        qDebug() << "Loading Color" << k << "into ColorPatchWidget" << k2;
-        QVector3D ingClr = newPreset.m_ingredientMixColors[k];
-        qDebug() << "Converting (" << ingClr[0] << ingClr[1] << ingClr[2] << ") to QColor...";
-        QColor newClr = EXColorMixState::instance()->toQColor(ingClr);
-        // float clrX = newPreset->m_ingredientMixColors[k2][0];
-        // float clrY = newPreset->m_ingredientMixColors[k2][1];
-        // float clrZ = newPreset->m_ingredientMixColors[k2][2];
-        // qDebug() << "Loaded new Color for ColorPatch" << k << "from color" << k2 << QString("(%1,%2,%3)").arg(clrX).arg(clrY).arg(clrZ);
-        // m_colorPatchWidgets[k]->onColorSelected(newClr);
-        m_colorPatchWidgets[k]->m_color = newClr;
+        if (newPreset.m_useGradients[k]) {
+            QVector3D gradClr = newPreset.m_mixGradients[k].colorAt(0.5);
+            QColor newClr = m_colorMixState->toQColor(gradClr);
+            m_colorPatchWidgets[k]->m_color = newClr;
+        } else {
+            QVector3D ingClr = newPreset.m_ingredientMixColors[k];
+            QColor newClr = m_colorMixState->toQColor(ingClr);
+            m_colorPatchWidgets[k]->m_color = newClr;
+        }
         m_colorPatchWidgets[k]->m_depictsGradient = newPreset.m_useGradients[k];
         m_colorPatchWidgets[k]->update();
     }
