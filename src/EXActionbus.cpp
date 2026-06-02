@@ -90,6 +90,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
             QVector3D patchClrRep = m_colorPresets->activePreset().m_ingredientMixColors[selectedChannel];
             QColor patchClr = m_mixer->toQColor(patchClrRep);
             uiCapture->m_colorPatchWidgets[selectedChannel]->loadColorFromRaw(patchClr);
+            uiCapture->m_gradientWidget->disable();
         };
     });
 
@@ -101,6 +102,7 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
             m_mixer->onColorPresetChanged();
             const EXColorGradient& gradient = m_colorPresets->activePreset().m_mixGradients[selectedChannel];
             uiCapture->m_colorPatchWidgets[selectedChannel]->loadColorFromGradient(gradient);
+            uiCapture->m_gradientWidget->enable();
         };
     });
 
