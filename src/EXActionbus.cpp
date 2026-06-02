@@ -88,6 +88,9 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         if (selectedChannel >= 0) {
             m_colorPresets->onGradientModeSelected(selectedChannel, false);
             m_mixer->onColorPresetChanged();
+            QVector3D patchClrRep = m_colorPresets->activePreset().m_ingredientMixColors[selectedChannel];
+            QColor patchClr = m_mixer->toQColor(patchClrRep);
+            uiCapture->m_colorPatchWidgets[selectedChannel]->loadColorFromRaw(patchClr);
         };
     });
 
@@ -97,6 +100,8 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         if (selectedChannel >= 0) {
             m_colorPresets->onGradientModeSelected(selectedChannel, true);
             m_mixer->onColorPresetChanged();
+            const EXColorGradient& gradient = m_colorPresets->activePreset().m_mixGradients[selectedChannel];
+            uiCapture->m_colorPatchWidgets[selectedChannel]->loadColorFromGradient(gradient);
         };
     });
 

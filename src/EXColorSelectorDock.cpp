@@ -387,16 +387,12 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
     for (size_t k=0; k<m_colorPatchWidgets.size(); ++k) {
         if (k == 4) continue;
         if (newPreset.m_useGradients[k]) {
-            QVector3D gradClr = newPreset.m_mixGradients[k].colorAt(0.5);
-            QColor newClr = m_colorMixState->toQColor(gradClr);
-            m_colorPatchWidgets[k]->m_color = newClr;
+            m_colorPatchWidgets[k]->loadColorFromGradient(newPreset.m_mixGradients[k]);
         } else {
             QVector3D ingClr = newPreset.m_ingredientMixColors[k];
             QColor newClr = m_colorMixState->toQColor(ingClr);
-            m_colorPatchWidgets[k]->m_color = newClr;
+            m_colorPatchWidgets[k]->loadColorFromRaw(newClr);
         }
-        m_colorPatchWidgets[k]->m_depictsGradient = newPreset.m_useGradients[k];
-        m_colorPatchWidgets[k]->update();
     }
     int mixChannel = this->selectedMixChannel();
     if (EXColorPresetStore::instance()->activePresetUsesGradient(mixChannel)) {
