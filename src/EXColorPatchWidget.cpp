@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <qcolor.h>
+#include <qnamespace.h>
 
 #include "EXColorPatchWidget.h"
 
@@ -29,14 +30,24 @@ void EXColorPatchWidget::paintEvent(QPaintEvent *)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, false);
 
+    QRectF body = this->rect();
     // Fill color
-    p.fillRect(rect(), m_color);
+    p.fillRect(body, m_color);
+    if (m_depictsGradient) {
+        float w = body.width()/4;
+        QRectF third = QRectF(body);
+        third.setWidth(w);
+        p.fillRect(third, QColor(255,255,255,64));
+        third.moveRight(body.right());
+        p.fillRect(third, QColor(0,0,0,64));
+    } else {
+    }
 
     // Selection border
     if (m_selected) {
         QPen pen(Qt::white, 2);
         p.setPen(pen);
-        p.drawRect(rect().adjusted(1, 1, -1, -1));
+        p.drawRect(body.adjusted(1, 1, -1, -1));
     }
 }
 

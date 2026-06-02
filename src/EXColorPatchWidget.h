@@ -21,6 +21,7 @@ public:
 
     QColor m_color;
     bool m_selected = false;
+    bool m_depictsGradient = false;
 
 Q_SIGNALS:
     void sigClicked();

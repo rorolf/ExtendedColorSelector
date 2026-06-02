@@ -398,6 +398,7 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
         // qDebug() << "Loaded new Color for ColorPatch" << k << "from color" << k2 << QString("(%1,%2,%3)").arg(clrX).arg(clrY).arg(clrZ);
         // m_colorPatchWidgets[k]->onColorSelected(newClr);
         m_colorPatchWidgets[k]->m_color = newClr;
+        m_colorPatchWidgets[k]->m_depictsGradient = newPreset.m_useGradients[k];
         m_colorPatchWidgets[k]->update();
     }
     int mixChannel = this->selectedMixChannel();
