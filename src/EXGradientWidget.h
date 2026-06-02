@@ -85,6 +85,7 @@ class EXGradientPointerContainerWidget : public QWidget
         void onGradientPositionChanged(float signal);
 
     Q_SIGNALS:
+        void sigGradientPointerSelected(int gradientPointIndex);
 
     protected:
         void paintEvent(QPaintEvent* event) override;
@@ -158,6 +159,7 @@ class EXGradientWidget : public QWidget
     Q_SIGNALS:
         void sigAddGradientPoint(float position);
         void sigRemoveGradientPoint(int gradientPointIndex);
+        void sigGradientPointerSelected(int gradientPointIndex);
 
     protected:
 

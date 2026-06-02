@@ -43,6 +43,7 @@ EXColorMixState::EXColorMixState()
     , m_dcc(nullptr)
     , m_koColorConverter(nullptr)
     , m_blockColorSync(false)
+    , m_blockColorMix(false)
     , m_useLayerColorSpace(false)
 
 {
@@ -84,10 +85,16 @@ void EXColorMixState::blockUpdates(bool blockUpdates) {
     this->m_blockColorSync = blockUpdates;
 }
 
+void EXColorMixState::blockMixing(bool blockMixing) {
+    this->m_blockColorMix = blockMixing;
+}
+
 void EXColorMixState::mixColors()
 {
     // TODO: allow multiple mixing behaviors
     // TODO: differentiate between mix and gradient presets
+
+    if (m_blockColorMix) { return; }
 
     QVector3D out_color = m_kritaBaseColor;
 

@@ -64,6 +64,7 @@ public:
     void clearConnectedChannelSliders();
 
     void blockUpdates(bool blockUpdates);
+    void blockMixing(bool blockMixing);
 
     // additional
     void mixColors();
@@ -103,6 +104,7 @@ private:
     KisDisplayColorConverter *m_dcc;
     EXColorConverterSP m_koColorConverter;
     bool m_blockColorSync;
+    bool m_blockColorMix;
     bool m_useLayerColorSpace;
 };
 

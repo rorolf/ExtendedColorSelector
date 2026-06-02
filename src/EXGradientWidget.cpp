@@ -223,6 +223,7 @@ void EXGradientPointerContainerWidget::mousePressEvent(QMouseEvent *event)
         m_selectedPointer = clickedPointer;
         m_pointers[m_selectedPointer]->setSelected(true);
     }
+    emit sigGradientPointerSelected(m_selectedPointer);
     this->update();
 }
 
@@ -355,6 +356,9 @@ EXGradientWidget::EXGradientWidget(QWidget* parent)
     this->m_gradientRectangle = new EXGradientRectangleWidget(this);
     m_gradientRectangle->setGradient(m_gradient);
     this->m_pointerContainer = new EXGradientPointerContainerWidget(this);
+    connect(this->m_pointerContainer, &EXGradientPointerContainerWidget::sigGradientPointerSelected,
+                    this, &EXGradientWidget::sigGradientPointerSelected);
+
     gradientLayout->addWidget(m_gradientRectangle);
     gradientLayout->addWidget(m_pointerContainer);
 
