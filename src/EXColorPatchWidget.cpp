@@ -15,7 +15,7 @@ EXColorPatchWidget::EXColorPatchWidget(QWidget *parent)
     : QWidget(parent)
 {
     auto mainLayout = new QVBoxLayout(this);
-    setFixedSize(48, 48);
+    setFixedSize(32, 32);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
