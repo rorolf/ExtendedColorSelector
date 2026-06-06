@@ -385,7 +385,7 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
     EXColorPreset newPreset = EXColorPresetStore::instance()->activePreset();
 
     for (size_t k=0; k<m_colorPatchWidgets.size(); ++k) {
-        if (k == 4) continue;
+        // if (k == 4) continue;
         if (newPreset.m_useGradients[k]) {
             m_colorPatchWidgets[k]->loadColorFromGradient(newPreset.m_mixGradients[k]);
         } else {
