@@ -156,12 +156,16 @@ void EXColorMixState::syncFromKrita()
         return;
     }
 
+
     KoColor koColor = m_resourceProvider->fgColor();
     koColor.convertTo(m_currentColorSpace);
     QVector3D newColor = m_koColorConverter->koColorToDisplayChannels(koColor).toVector3D();
     //m_color = kritaColorModel()->transferTo(m_colorModel, newColor, m_color);
     //setColor(m_color);
 
+    qDebug() << "Krita uses color model: " << kritaColorModel()->displayName();
+    qDebug() << QString("Krita Color representation: (%1,%2,%3)")
+                        .arg(newColor[0]).arg(newColor[1]).arg(newColor[2]);
     if (newColor != m_kritaBaseColor) {
         newColor = kritaColorModel()->transferTo(m_colorModel, newColor, m_kritaBaseColor);
         setColor(newColor);
