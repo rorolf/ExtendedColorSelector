@@ -394,9 +394,7 @@ void EXColorSelectorDock::loadColorsFromPreset(int activePreset) {
         }
     }
     int mixChannel = this->selectedMixChannel();
-    if (EXColorPresetStore::instance()->activePresetUsesGradient(mixChannel)) {
-        m_gradientWidget->usePreset(newPreset, mixChannel);
-    }
+    m_gradientWidget->usePreset(newPreset, mixChannel);
 }
 
 void EXColorSelectorDock::updateSliders()
