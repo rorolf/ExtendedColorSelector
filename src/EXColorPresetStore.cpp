@@ -217,7 +217,29 @@ void EXColorPresetStore::writeSettings()
 }
 
 
+void EXColorPresetStore::transferColorRepresentations(ColorModelId newClrModelID) {
+    ColorModelSP oldClrModel =  m_colorMixPresets[m_activePreset].m_colorModel;
+    EXColorModel* newClrModel = ColorModelFactory::fromId(newClrModelID);
 
+    for (size_t k=0; k<m_colorMixPresets[m_activePreset].m_ingredientMixColors.size(); ++k) {
+        QVector3D newClr = oldClrModel->transferTo(newClrModel, m_colorMixPresets[m_activePreset].m_ingredientMixColors[k]);
+        m_colorMixPresets[m_activePreset].m_ingredientMixColors[k] = newClr;
+    }
+
+    for (size_t k1=0; k1<m_colorMixPresets[m_activePreset].m_mixGradients.size(); ++k1) {
+        EXColorGradient* gradient = &m_colorMixPresets[m_activePreset].m_mixGradients[k1];
+        QVector<EXGradientColor> newClrs = gradient->m_colorSpline.points();
+        int k2max = newClrs.size();
+        for (int k2=0; k2<k2max; ++k2) {
+            QVector3D newClr = oldClrModel->transferTo(newClrModel, newClrs[k2].m_color);
+            gradient->m_colorSpline.replaceColor(k2, newClr);
+        }
+        gradient->m_colorSpline.replaceColors(newClrs);
+    }
+
+    m_colorMixPresets[m_activePreset].m_colorModel = newClrModel;
+    presetsChanged = true;
+}
 
 void EXColorPresetStore::onPresetSelected(int newPreset)
 {
@@ -227,8 +249,7 @@ void EXColorPresetStore::onPresetSelected(int newPreset)
 
 void EXColorPresetStore::onColorSpaceSelected(ColorModelId newClrModel)
 {
-    m_colorMixPresets[m_activePreset].m_colorModel = ColorModelFactory::fromId(newClrModel);
-    presetsChanged = true;
+    this->transferColorRepresentations(newClrModel);
 }
 
 void EXColorPresetStore::onGradientModeSelected(int channel, bool mixFromGradients)

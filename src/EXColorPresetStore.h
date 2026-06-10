@@ -22,6 +22,7 @@
 
 #include "EXColorModel.h"
 #include "EXGradient.h"
+#include "KoColorSpace.h"
 
 
 class EXColorPreset
@@ -57,6 +58,7 @@ public:
     const EXColorPreset& activePreset() const;
     int activePresetIndex() const;
     bool activePresetUsesGradient(int channel) const;
+    void transferColorRepresentations(ColorModelId newClrModel);
     void writeSettings();
 
     void addGradientPoint(int channelIndex, float position);
