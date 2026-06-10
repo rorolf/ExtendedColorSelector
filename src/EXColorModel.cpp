@@ -369,7 +369,8 @@ QVector3D LCHModel::fromXyz(const QVector3D &color) const
         h += 360.0;
     }
 
-    return QVector3D(lab[0] / 1.5, c / 1.5, h / 360);
+    // return QVector3D(lab[0] / 1.5, c / 1.5, h / 360);
+    return QVector3D(lab[0], c / 1.5, h / 360);
 }
 
 QVector3D LCHModel::toXyz(const QVector3D &color) const
@@ -379,7 +380,8 @@ QVector3D LCHModel::toXyz(const QVector3D &color) const
     float a = color[1] * cos;
     float b = color[1] * sin;
 
-    return LABModel().toXyz(QVector3D(color[0] * 1.5, a / 3 + 0.5, b / 3 + 0.5));
+    // return LABModel().toXyz(QVector3D(color[0] * 1.5, a / 3 + 0.5, b / 3 + 0.5));
+    return LABModel().toXyz(QVector3D(color[0], (b / 3 + 0.5), a / 3 + 0.5));
 }
 
 void LCHModel::resolveReference(QVector3D &color, const QVector3D &reference) const
@@ -464,7 +466,8 @@ QVector3D OKLCHModel::fromXyz(const QVector3D &color) const
         hue += 360;
     }
 
-    return QVector3D(oklab[0], chroma, hue / 360);
+    // return QVector3D(oklab[0], chroma, hue / 360);
+    return QVector3D(oklab[0] / 1.5, chroma, hue / 360);
 }
 
 QVector3D OKLCHModel::toXyz(const QVector3D &color) const
@@ -474,7 +477,8 @@ QVector3D OKLCHModel::toXyz(const QVector3D &color) const
     float a = color[1] * cos;
     float b = color[1] * sin;
 
-    return OKLABModel().toXyz(QVector3D(color[0], a * 0.5 + 0.5, b * 0.5 + 0.5));
+    // return OKLABModel().toXyz(QVector3D(color[0], a * 0.5 + 0.5, b * 0.5 + 0.5));
+    return OKLABModel().toXyz(QVector3D(color[0] * 1.5, (a * 0.5 + 0.5), b * 0.5 + 0.5));
 }
 
 void OKLCHModel::resolveReference(QVector3D &color, const QVector3D &reference) const
