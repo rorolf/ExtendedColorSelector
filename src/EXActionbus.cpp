@@ -75,7 +75,8 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
         qDebug() << "A new preset was selected via UI";
         m_colorPresets->onPresetSelected(newIndex);
         m_mixer->onColorPresetChanged();
-        this->m_ui->loadColorsFromPreset(newIndex);
+        m_mixer->deselectGradient();
+        m_ui->loadColorsFromPreset(newIndex);
     });
 
     connect(uiCapture, &EXColorSelectorDock::sigMixFromColorsButtonPressed, this, [this, uiCapture]() {
@@ -144,6 +145,9 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
             }
         }
         m_colorPresets->onColorSpaceSelected(newClrId);
+        m_ui->onColorSpaceSelected(colorSpace);
+        int preset = m_colorPresets->activePresetIndex();
+        m_ui->loadColorsFromPreset(preset);
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
 
@@ -160,6 +164,8 @@ void EXActionBus::initializeAndConnectToEXS(EXColorSelectorDock* ui) {
             }
         }
         m_colorPresets->onColorSpaceSelected(newClrId);
+        int preset = m_colorPresets->activePresetIndex();
+        m_ui->onNewPresetSelected(preset);
         //uiCapture->m_colorSpaceSelectorButton->setText(colorSpace->name());
     });
 

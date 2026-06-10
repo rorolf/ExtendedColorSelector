@@ -65,6 +65,7 @@ public:
 
     void blockUpdates(bool blockUpdates);
     void blockMixing(bool blockMixing);
+    void deselectGradient();
 
     // additional
     void mixColors();

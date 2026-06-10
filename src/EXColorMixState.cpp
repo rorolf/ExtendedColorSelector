@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <kis_canvas2.h>
 #include <kis_display_color_converter.h>
+#include <qglobal.h>
 #include <qmath.h>
 #include <qvector.h>
 #include <qvector3d.h>
@@ -87,6 +88,10 @@ void EXColorMixState::blockUpdates(bool blockUpdates) {
 
 void EXColorMixState::blockMixing(bool blockMixing) {
     this->m_blockColorMix = blockMixing;
+}
+
+void EXColorMixState::deselectGradient() {
+    m_useGradientColorIndex = -1;
 }
 
 void EXColorMixState::mixColors()
