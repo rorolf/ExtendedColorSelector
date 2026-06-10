@@ -151,6 +151,13 @@ public:
         }
     };
 
+    void replaceColors(QVector<EXGradientColor> colors) {
+        exAssert(colors.size() == m_points.size(), "In EXColorGradient, tried to replace colors with vector of mismatching size");
+        m_points = colors;
+        this->dedup();
+        this->preprocess();
+    }
+
     void replaceColor(int gradientPointIndex, const QVector3D& newlyPickedColor) {
         if (inbounds(m_points, gradientPointIndex)) {
             float position = m_points[gradientPointIndex].m_positionOnGradient;
